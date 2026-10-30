@@ -220,7 +220,8 @@ def prepare_semantic_visuals(root,code,selected):
     job.mkdir(); temporary=job/'tmp'; temporary.mkdir()
     source=Path(selected['sources'][code]['path']); common=Path(selected['sources']['common_mp']['path'])
     command=[str(executable),'models',str(source),str(common),str(job/'bundle'),selected['sources'][code]['sha256']]
-    pipeline_workflow._run(command,job,pipeline_workflow._environment(temporary,selected['installation']),job/'convert.log',timeout=300)
+    cache=local_path(root,'.local/converter');cache.mkdir(parents=True,exist_ok=True)
+    pipeline_workflow._run(command,cache,pipeline_workflow._environment(temporary,selected['installation']),job/'convert.log',timeout=300)
     for key,path in ((code,source),('common_mp',common)):
         if digest(path)!=selected['sources'][key]['sha256']: raise ValueError('Original game file changed during local preparation')
     return source_bundle.capture_gltf_bundle(job/'bundle/scene.gltf',include_images=True)
@@ -238,7 +239,8 @@ def export_map(root,code,asset_root=None,*,_verified_profile=None):
     job.mkdir(); temporary=job/'tmp'; temporary.mkdir()
     source=Path(selected['sources'][code]['path']); common=Path(selected['sources']['common_mp']['path'])
     command=[str(executable),'map',str(source),str(common),str(job/'bundle'),selected['sources'][code]['sha256']]
-    pipeline_workflow._run(command,job,pipeline_workflow._environment(temporary,selected['installation']),job/'convert.log',timeout=300)
+    cache=local_path(root,'.local/converter');cache.mkdir(parents=True,exist_ok=True)
+    pipeline_workflow._run(command,cache,pipeline_workflow._environment(temporary,selected['installation']),job/'convert.log',timeout=300)
     for key,path in ((code,source),('common_mp',common)):
         if digest(path)!=selected['sources'][key]['sha256']: raise ValueError('Original game file changed during local preparation')
     scenes=list((job/'bundle/exports'/code).glob('p1a-*/scene.gltf'))

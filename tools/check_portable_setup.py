@@ -104,5 +104,32 @@ class PortableSetupTests(unittest.TestCase):
         self.assertEqual(set(removed),{unused_mesh,unused_image})
         self.assertFalse(unused_image.use_fake_user)
         self.assertTrue(foreign_image.use_fake_user)
+    def _export_fixture(self,tamper=False):
+        common=self.source.with_name('common_mp.ff');common.write_bytes(b'synthetic common')
+        self.document['sources'].append(dict(source_map='common_mp',native_sha256=setup.digest(common)))
+        self.write_manifest();setup.select_installation(self.install,self.root)
+        pipeline=types.ModuleType(PACKAGE+'.pipeline_workflow')
+        source_bundle=types.ModuleType(PACKAGE+'.source_bundle')
+        source_bundle.capture_gltf_bundle=lambda path,**kw:dict(reference_path=str(path))
+        calls=[]
+        def run(command,cwd,environment,log,**kwargs):
+            calls.append((command,cwd))
+            output=Path(command[4])/'exports/mp_rust/p1a-synthetic/scene.gltf'
+            output.parent.mkdir(parents=True);output.write_text('{}')
+            if tamper:self.source.write_bytes(b'changed while converting')
+        pipeline._run=run;pipeline._environment=lambda *args:{}
+        with patch.dict(sys.modules,{PACKAGE+'.pipeline_workflow':pipeline,PACKAGE+'.source_bundle':source_bundle}),patch.object(setup,'backend',return_value=self.root/'verified-tool.exe'):
+            result=setup.export_map(self.root,'mp_rust',self.install)
+        return result,calls
+    def test_public_export_uses_asset_only_command_and_shared_local_cache(self):
+        result,calls=self._export_fixture()
+        command,cwd=calls[0]
+        self.assertEqual(command[1],'map')
+        self.assertEqual(Path(command[2]),self.source)
+        self.assertEqual(cwd,self.root/'.local/converter')
+        self.assertTrue(Path(command[4]).is_relative_to(self.root/'.local'))
+        self.assertFalse(result['game_started'])
+    def test_source_change_during_conversion_is_rejected(self):
+        with self.assertRaisesRegex(ValueError,'changed during local preparation'):self._export_fixture(tamper=True)
 
 if __name__=='__main__': unittest.main(verbosity=2)
