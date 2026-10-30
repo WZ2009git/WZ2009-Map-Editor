@@ -5,6 +5,23 @@ from pathlib import Path
 import uuid
 
 
+def _evict_temporary_data(before,scene):
+    """Remove only this source import's unused IDs, including fake-user data."""
+    import bpy
+    from .map_residency import all_ids
+    current=set(all_ids())
+    additions={value for value in current if value.as_pointer() not in before}
+    keep=(current-additions)|{scene,scene.collection}
+    users=bpy.data.user_map()
+    while True:
+        retained={value for value in additions-keep if users.get(value,set()) & keep}
+        if not retained: break
+        keep.update(retained)
+    doomed=additions-keep
+    for value in doomed: value.use_fake_user=False
+    if doomed: bpy.data.batch_remove(ids=doomed)
+
+
 def _matrix_mesh(mesh,matrix):
     import numpy as np
     from .city_loose_parts import _capture
@@ -216,6 +233,7 @@ def rebuild(root,assets_path,output,status=None):
     source_catalogs={}
     for number,code in enumerate(sorted({r['source_map'] for r in recipe['maps']}),1):
         if status: status(phase='BUILD',map=code,message='Reconstructing '+code,done=number-1,total=len(assets))
+        before={value.as_pointer() for value in map_residency.all_ids()}
         native_scene=bpy.data.scenes.new('Native sources '+code)
         extras=[(assets[code]['supplemental_bundle']['reference_path'],code)]
         for row in recipe['maps']:
@@ -241,6 +259,7 @@ def rebuild(root,assets_path,output,status=None):
                 all_records[row['id']]=build_map(scene,roots[row['id']],row,reference,root/'project',output)
                 build_outskirts(scene,roots[row['id']],row,reference,output)
         bpy.data.batch_remove(ids=list(reference['objects'])+[reference['owner']]); bpy.data.scenes.remove(native_scene)
+        _evict_temporary_data(before,scene)
     terrain=recipe.get('authored_terrain')
     if terrain:
         terrain_path=setup.local_path(root/'project',terrain['file'])

@@ -186,6 +186,8 @@ def prepare(root=None,status=None,cancel=None):
     selected=profile(root,verify=True); project=manifest(root)
     notify(phase='TOOL',message='Preparing the verified offline conversion tool')
     backend(root,download=True)
+    tool_hash=read_json(root/'project/backend.json')['executable_sha256']
+    expected_references={row['source_map']:row['calibration']['registration']['reference_sha256'] for row in project['maps']}
     results={}
     index_path=local_path(root,'.local/assets.json')
     if index_path.exists(): results=read_json(index_path).get('maps',{})
@@ -199,11 +201,14 @@ def prepare(root=None,status=None,cancel=None):
             try:
                 source_bundle.verify_preview_bundle(cached['preview_bundle'])
                 source_bundle.verify_preview_bundle(cached['supplemental_bundle'])
-                if cached.get('native_sha256')==row['native_sha256']: continue
+                if (cached.get('native_sha256')==row['native_sha256'] and cached.get('tool_sha256')==tool_hash
+                        and cached['preview_bundle']['reference_sha256']==expected_references[code]): continue
             except (OSError,ValueError,KeyError): pass
         report=export_map(root,code,selected['installation'],_verified_profile=selected)
+        if report['preview_bundle']['reference_sha256']!=expected_references[code]:
+            raise ValueError('Converted '+code+' differs from the project reference; this source/converter combination is unsupported')
         supplemental=prepare_semantic_visuals(root,code,selected)
-        results[code]=dict(native_sha256=row['native_sha256'],preview_bundle=report['preview_bundle'],supplemental_bundle=supplemental)
+        results[code]=dict(native_sha256=row['native_sha256'],tool_sha256=tool_hash,preview_bundle=report['preview_bundle'],supplemental_bundle=supplemental)
         atomic_json(index_path,dict(kind='wz09-local-assets-v1',maps=results))
     return index_path
 

@@ -230,6 +230,8 @@ def capture_map(root,collection,reference,boundary,parts,output):
     output=Path(output); output.mkdir(parents=True,exist_ok=True)
     objects=list(collection.all_objects)
     identity={obj:obj.get('wz09_library_object_id') or str(uuid.uuid4()) for obj in objects}
+    if len(set(identity.values()))!=len(identity):
+        raise ValueError('Detail library contains duplicate persistent object IDs: '+str(root.get('wz09_id')))
     cache={}; records=[]; total=0; maximum=0.; failures=[]
     fields=('wz09_preview_id','wz09_library_object_id','wz09_preview_only','wz09_city_edit_source_id',
             'wz09_city_edit_part_id','wz09_city_part_source','wz09_retained_source_root')
