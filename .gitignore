@@ -1,0 +1,11 @@
+.local/
+exports/
+blender_projects/
+__pycache__/
+*.pyc
+.env
+target/
+*.blend*
+*.ff
+*.iwd
+*.exe

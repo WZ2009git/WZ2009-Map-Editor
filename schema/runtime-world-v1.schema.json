@@ -1,0 +1,1792 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wz2009.local/runtime-world-v1.schema.json",
+  "title": "KARVORSK runtime interchange v1 (not consumer approval)",
+  "$defs": {
+    "runtime_resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "byte_length"
+      ]
+    },
+    "product_wz09_intro_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_intro_runtime"
+        },
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "world_id": {
+          "const": "wz09_karvorsk"
+        },
+        "units": {
+          "const": "meters"
+        },
+        "coordinate_system": {
+          "const": "world_z_up"
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "clearance_verified": {
+          "const": false
+        },
+        "sample_rate_hz": {
+          "const": 30
+        },
+        "evaluation_source": {
+          "enum": [
+            "blender_evaluated_depsgraph",
+            "synthetic_fixture"
+          ]
+        },
+        "source_status": {
+          "enum": [
+            "synthetic",
+            "evaluated_editor_scene"
+          ]
+        },
+        "source_timeline_id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_timeline_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_routes_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "aircraft_model_ref": {
+          "const": "vehicle_ac130_coop@common_mp"
+        },
+        "aircraft_forward_axis": {
+          "enum": [
+            "+X",
+            "-X",
+            "+Y",
+            "-Y",
+            "+Z",
+            "-Z"
+          ]
+        },
+        "aircraft_up_axis": {
+          "enum": [
+            "+X",
+            "-X",
+            "+Y",
+            "-Y",
+            "+Z",
+            "-Z"
+          ]
+        },
+        "spawn_marker_id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "spawn_offset_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "insertion_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "jump_open_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "jump_close_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "jump_open_abs_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "jump_close_abs_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "auto_jump_at_close": {
+          "const": true
+        },
+        "camera_axes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "forward": {
+              "const": "-Z"
+            },
+            "up": {
+              "const": "+Y"
+            }
+          },
+          "required": [
+            "forward",
+            "up"
+          ]
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 3600
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "t_s": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 3600
+              },
+              "presentation_only": {
+                "type": "boolean"
+              },
+              "aircraft": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "position_m": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "forward": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1.00001,
+                      "maximum": 1.00001
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "up": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1.00001,
+                      "maximum": 1.00001
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "required": [
+                  "position_m",
+                  "forward",
+                  "up"
+                ]
+              },
+              "camera": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "position_m": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "forward": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1.00001,
+                      "maximum": 1.00001
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "up": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1.00001,
+                      "maximum": 1.00001
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "hfov_deg": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 179.99
+                  }
+                },
+                "required": [
+                  "position_m",
+                  "forward",
+                  "up",
+                  "hfov_deg"
+                ]
+              }
+            },
+            "required": [
+              "t_s",
+              "presentation_only",
+              "aircraft",
+              "camera"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 108002
+        },
+        "audio_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "t_s": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 3600
+              },
+              "alias_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_]+$"
+              },
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "volume": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "fade_in_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fade_out_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "loop": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "volume",
+                  "fade_in_s",
+                  "fade_out_s",
+                  "loop"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "t_s",
+              "alias_ref",
+              "parameters"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        "continuation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "route_id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,128}$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "route_elapsed_at_insertion_s": {
+              "type": "number",
+              "minimum": 0
+            },
+            "start_abs_s": {
+              "type": "number",
+              "minimum": 0
+            },
+            "end_abs_s": {
+              "type": "number",
+              "minimum": 0
+            },
+            "interpolation": {
+              "const": "sampled_linear"
+            },
+            "speed_mode": {
+              "const": "per_segment"
+            },
+            "segment_speeds_mps": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 1,
+              "maxItems": 108001
+            }
+          },
+          "required": [
+            "route_id",
+            "route_elapsed_at_insertion_s",
+            "start_abs_s",
+            "end_abs_s",
+            "interpolation",
+            "speed_mode",
+            "segment_speeds_mps"
+          ]
+        },
+        "screen_fades": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "source_event_id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "t_s": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 3600
+              },
+              "color": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "from_alpha": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "to_alpha": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "duration_s": {
+                "type": "number",
+                "minimum": 0.001,
+                "maximum": 3600
+              }
+            },
+            "required": [
+              "id",
+              "source_event_id",
+              "t_s",
+              "color",
+              "from_alpha",
+              "to_alpha",
+              "duration_s"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "id",
+        "world_id",
+        "units",
+        "coordinate_system",
+        "runtime_integrated",
+        "physical_scale_verified",
+        "clearance_verified",
+        "sample_rate_hz",
+        "evaluation_source",
+        "source_status",
+        "source_timeline_id",
+        "source_timeline_sha256",
+        "source_routes_sha256",
+        "aircraft_model_ref",
+        "aircraft_forward_axis",
+        "aircraft_up_axis",
+        "spawn_marker_id",
+        "spawn_offset_m",
+        "insertion_s",
+        "jump_open_s",
+        "jump_close_s",
+        "jump_open_abs_s",
+        "jump_close_abs_s",
+        "auto_jump_at_close",
+        "camera_axes",
+        "duration_s",
+        "samples",
+        "audio_events",
+        "continuation"
+      ]
+    },
+    "product_wz09_royale_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_royale_layout"
+        },
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "world_id": {
+          "const": "wz09_karvorsk"
+        },
+        "units": {
+          "const": "meters"
+        },
+        "coordinate_system": {
+          "const": "world_z_up"
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "clearance_verified": {
+          "const": false
+        },
+        "play_bounds": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": -3200,
+              "maximum": 3200
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 3,
+          "maxItems": 256
+        },
+        "drop_bounds": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": -3200,
+              "maximum": 3200
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 3,
+          "maxItems": 256
+        },
+        "out_of_bounds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "polygon_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -3200,
+                    "maximum": 3200
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "reason": {
+                "enum": [
+                  "deep_water",
+                  "world_edge",
+                  "authored_exclusion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "polygon_m",
+              "reason"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "flight_altitude_m": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 3200
+        },
+        "spawn": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "marker_id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,128}$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "position_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "aircraft_local_offset_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "marker_id",
+            "position_m",
+            "aircraft_local_offset_m"
+          ]
+        },
+        "aircraft_corridor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "radius_m": {
+              "type": "number",
+              "minimum": 0.01
+            },
+            "minimum_clearance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "verification_status": {
+              "const": "unverified"
+            }
+          },
+          "required": [
+            "radius_m",
+            "minimum_clearance_m",
+            "verification_status"
+          ]
+        },
+        "parachute": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "deploy_height_m": {
+              "type": "number",
+              "minimum": 0.01
+            },
+            "auto_deploy": {
+              "type": "boolean"
+            },
+            "ground_clearance_verified": {
+              "const": false
+            },
+            "model_ref": {
+              "const": "parachute_deploy@invasion"
+            }
+          },
+          "required": [
+            "deploy_height_m",
+            "auto_deploy",
+            "ground_clearance_verified"
+          ]
+        },
+        "zone_center_candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 1e-06
+              }
+            },
+            "required": [
+              "id",
+              "position_m",
+              "weight"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        "poi_regions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "poi_id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 24,
+                "pattern": "^[A-Z0-9 _-]+$"
+              },
+              "polygon_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -3200,
+                    "maximum": 3200
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": -10000,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "poi_id",
+              "name",
+              "polygon_m",
+              "priority"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1024
+        },
+        "gulag_arena": {
+          "const": null
+        },
+        "speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "id",
+        "world_id",
+        "units",
+        "coordinate_system",
+        "runtime_integrated",
+        "physical_scale_verified",
+        "clearance_verified",
+        "play_bounds",
+        "drop_bounds",
+        "out_of_bounds",
+        "flight_altitude_m",
+        "spawn",
+        "aircraft_corridor",
+        "parachute",
+        "zone_center_candidates",
+        "poi_regions",
+        "gulag_arena"
+      ]
+    },
+    "product_wz09_runtime_world": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_runtime_world"
+        },
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "world_id": {
+          "const": "wz09_karvorsk"
+        },
+        "units": {
+          "const": "meters"
+        },
+        "coordinate_system": {
+          "const": "world_z_up"
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "clearance_verified": {
+          "const": false
+        },
+        "world_kind": {
+          "enum": [
+            "composite",
+            "single_map_overlay"
+          ]
+        },
+        "source_status": {
+          "enum": [
+            "synthetic",
+            "source_bound"
+          ]
+        },
+        "runtime_ready": {
+          "const": false
+        },
+        "maps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "source_map": {
+                "enum": [
+                  "mp_afghan",
+                  "mp_boneyard",
+                  "mp_brecourt",
+                  "mp_checkpoint",
+                  "mp_derail",
+                  "mp_estate",
+                  "mp_favela",
+                  "mp_highrise",
+                  "mp_invasion",
+                  "mp_nightshift",
+                  "mp_quarry",
+                  "mp_rundown",
+                  "mp_rust",
+                  "mp_subbase",
+                  "mp_terminal",
+                  "mp_underpass"
+                ]
+              },
+              "position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation_deg": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "source_units_to_meter": {
+                "type": "number",
+                "minimum": 0.025399,
+                "maximum": 0.025401
+              },
+              "calibration": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "basis": {
+                    "enum": [
+                      "export_registration",
+                      "p1a_export_convention"
+                    ]
+                  },
+                  "source_units_to_meter": {
+                    "type": "number",
+                    "minimum": 0.025399,
+                    "maximum": 0.025401
+                  },
+                  "axis_mapping": {
+                    "type": "array",
+                    "items": {
+                      "enum": [
+                        "x",
+                        "y",
+                        "z"
+                      ]
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "offset_m": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "exporter_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "evidence_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "evidence_status": {
+                    "enum": [
+                      "synthetic",
+                      "source_bound",
+                      "unverified"
+                    ]
+                  },
+                  "physical_scale_verified": {
+                    "const": false
+                  }
+                },
+                "required": [
+                  "basis",
+                  "source_units_to_meter",
+                  "axis_mapping",
+                  "offset_m",
+                  "exporter_sha256",
+                  "source_sha256",
+                  "evidence_sha256",
+                  "evidence_status",
+                  "physical_scale_verified"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "source_map",
+              "position_m",
+              "rotation_deg",
+              "source_units_to_meter",
+              "calibration"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 256
+        },
+        "markers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "kind": {
+                "enum": [
+                  "poi",
+                  "loot_crate",
+                  "buy_station",
+                  "player_spawn",
+                  "aircraft_keyframe",
+                  "loadout_drop",
+                  "ground_loot",
+                  "warmup_spawn"
+                ]
+              },
+              "map_instance_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation_deg": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "properties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "loot_table": {
+                    "type": "string",
+                    "pattern": "^[\\x21-\\x7e]{1,128}$",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "shop_catalog": {
+                    "type": "string",
+                    "pattern": "^[\\x21-\\x7e]{1,128}$",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "profile": {
+                    "type": "string",
+                    "pattern": "^[\\x21-\\x7e]{1,128}$",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "route_id": {
+                    "type": "string",
+                    "pattern": "^[\\x21-\\x7e]{1,128}$",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "time_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "ground_snap": {
+                    "type": "boolean"
+                  }
+                },
+                "required": []
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "map_instance_id",
+              "position_m",
+              "rotation_deg",
+              "properties"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 100000
+        },
+        "products": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "intro": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "byte_length"
+              ]
+            },
+            "royale_layout": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "byte_length"
+              ]
+            },
+            "terrain_collision": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "byte_length"
+              ]
+            }
+          },
+          "required": [
+            "intro",
+            "royale_layout",
+            "terrain_collision"
+          ]
+        },
+        "tactical_map": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "enum": [
+                "not_generated",
+                "generated"
+              ]
+            },
+            "image": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "byte_length"
+              ]
+            },
+            "width_px": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "height_px": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bounds_m": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -3200,
+                "maximum": 3200
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "pixel_to_world": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 6,
+              "maxItems": 6
+            },
+            "format": {
+              "enum": [
+                "png_rgba8",
+                "png_rgb8",
+                "none"
+              ]
+            },
+            "labels_baked": {
+              "const": false
+            }
+          },
+          "required": [
+            "status",
+            "image",
+            "width_px",
+            "height_px",
+            "bounds_m",
+            "pixel_to_world",
+            "format",
+            "labels_baked"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "id",
+        "world_id",
+        "units",
+        "coordinate_system",
+        "runtime_integrated",
+        "physical_scale_verified",
+        "clearance_verified",
+        "world_kind",
+        "source_status",
+        "runtime_ready",
+        "maps",
+        "markers",
+        "products",
+        "tactical_map"
+      ]
+    },
+    "product_wz09_terrain_collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_terrain_collision"
+        },
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,128}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "world_id": {
+          "const": "wz09_karvorsk"
+        },
+        "units": {
+          "const": "meters"
+        },
+        "coordinate_system": {
+          "const": "world_z_up"
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "clearance_verified": {
+          "const": false
+        },
+        "source_status": {
+          "const": "editor_geometry_unverified"
+        },
+        "collision_verified": {
+          "const": false
+        },
+        "grid": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "columns": {
+              "const": 33
+            },
+            "rows": {
+              "const": 33
+            },
+            "encoding": {
+              "const": "f32_le"
+            },
+            "row_axis": {
+              "const": "+Y"
+            },
+            "column_axis": {
+              "const": "+X"
+            },
+            "heights": {
+              "const": "absolute_world_z_m"
+            }
+          },
+          "required": [
+            "columns",
+            "rows",
+            "encoding",
+            "row_axis",
+            "column_axis",
+            "heights"
+          ]
+        },
+        "surface_table": {
+          "const": [
+            "sand",
+            "dirt",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt"
+          ]
+        },
+        "hole_policy": {
+          "const": "conservative_cell_core_intersection"
+        },
+        "native_boundary_verified": {
+          "const": false
+        },
+        "collision_cores": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "map_instance_id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "polygon_local_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -3200,
+                    "maximum": 3200
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "z_range_m": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -3200,
+                  "maximum": 3200
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "yaw_deg": {
+                "enum": [
+                  0,
+                  90,
+                  180,
+                  270
+                ]
+              },
+              "boundary_heights_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "ground_evidence_status": {
+                "enum": [
+                  "unverified",
+                  "source_bound"
+                ]
+              },
+              "boundary_height_tolerance_m": {
+                "const": 0.1
+              }
+            },
+            "required": [
+              "id",
+              "map_instance_id",
+              "polygon_local_m",
+              "z_range_m",
+              "position_m",
+              "yaw_deg",
+              "boundary_heights_m",
+              "ground_evidence_status",
+              "boundary_height_tolerance_m"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "tiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "tile": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "origin_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "cell_size_m": {
+                "type": "number",
+                "minimum": 0.001
+              },
+              "height_samples": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              },
+              "hole_mask": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              },
+              "surface_mask": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "tile",
+              "origin_m",
+              "cell_size_m",
+              "height_samples",
+              "hole_mask",
+              "surface_mask"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4096
+        },
+        "water_volumes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "polygon_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -3200,
+                    "maximum": 3200
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "level_m": {
+                "type": "number",
+                "minimum": -3200,
+                "maximum": 3200
+              },
+              "depth_m": {
+                "type": "number",
+                "minimum": 0.001
+              },
+              "walkable_depth_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "out_of_bounds_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "id",
+              "polygon_m",
+              "level_m",
+              "depth_m",
+              "walkable_depth_m",
+              "out_of_bounds_id"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "connectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[\\x21-\\x7e]{1,128}$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "vertices": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              },
+              "indices": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              },
+              "surface_mask": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "byte_length"
+                ]
+              },
+              "vertex_count": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 65535
+              },
+              "triangle_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              },
+              "vertex_encoding": {
+                "const": "f32_le_xyz"
+              },
+              "index_encoding": {
+                "const": "u16_le"
+              },
+              "winding": {
+                "const": "ccw"
+              },
+              "collision_verified": {
+                "const": false
+              }
+            },
+            "required": [
+              "id",
+              "vertices",
+              "indices",
+              "surface_mask",
+              "vertex_count",
+              "triangle_count",
+              "vertex_encoding",
+              "index_encoding",
+              "winding",
+              "collision_verified"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "id",
+        "world_id",
+        "units",
+        "coordinate_system",
+        "runtime_integrated",
+        "physical_scale_verified",
+        "clearance_verified",
+        "source_status",
+        "collision_verified",
+        "grid",
+        "surface_table",
+        "hole_policy",
+        "native_boundary_verified",
+        "collision_cores",
+        "tiles",
+        "water_volumes",
+        "connectors"
+      ]
+    }
+  },
+  "$ref": "#/$defs/product_wz09_runtime_world"
+}

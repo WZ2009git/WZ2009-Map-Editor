@@ -1,0 +1,4 @@
+WZ2009 Map Editor — WARZONE 2009 project
+Project: https://x.com/WZ_2009
+
+The standalone converter reuses Apache-2.0 asset readers and a glTF writer. Per-file origins and editor adaptations are recorded in tools/asset_tool/SOURCE_PROVENANCE.json. Rust dependencies retain their respective licenses. Original MW2009 content is not included and remains subject to its owners' rights.

@@ -1,0 +1,18 @@
+{
+  "Afghan": "mp_afghan",
+  "Derail": "mp_derail",
+  "Estate": "mp_estate",
+  "Favela": "mp_favela",
+  "Highrise": "mp_highrise",
+  "Invasion": "mp_invasion",
+  "Karachi": "mp_checkpoint",
+  "Quarry": "mp_quarry",
+  "Rundown": "mp_rundown",
+  "Rust": "mp_rust",
+  "Scrapyard": "mp_boneyard",
+  "Skidrow": "mp_nightshift",
+  "Sub Base": "mp_subbase",
+  "Terminal": "mp_terminal",
+  "Underpass": "mp_underpass",
+  "Wasteland": "mp_brecourt"
+}

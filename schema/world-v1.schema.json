@@ -1,0 +1,2865 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wz2009.local/world-v1.schema.json",
+  "title": "WZ2009 Map Editor World Export v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "world_id",
+    "units",
+    "maps",
+    "markers",
+    "nav",
+    "geometry",
+    "tactical_map"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "world_id": {
+      "const": "wz09_karvorsk"
+    },
+    "units": {
+      "const": "meters"
+    },
+    "maps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "source_map",
+          "position_m",
+          "rotation_deg",
+          "source_units_to_meter",
+          "calibration_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_map": {
+            "enum": [
+              "mp_afghan",
+              "mp_boneyard",
+              "mp_brecourt",
+              "mp_checkpoint",
+              "mp_derail",
+              "mp_estate",
+              "mp_favela",
+              "mp_highrise",
+              "mp_invasion",
+              "mp_nightshift",
+              "mp_quarry",
+              "mp_rundown",
+              "mp_rust",
+              "mp_subbase",
+              "mp_terminal",
+              "mp_underpass"
+            ]
+          },
+          "position_m": {
+            "$ref": "#/$defs/v3"
+          },
+          "rotation_deg": {
+            "$ref": "#/$defs/v3"
+          },
+          "source_units_to_meter": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "calibration_status": {
+            "enum": [
+              "calibrated",
+              "unverified"
+            ]
+          },
+          "calibration": {
+            "$ref": "#/$defs/calibration"
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "preview_bundle": {
+                "$ref": "#/$defs/preview_bundle"
+              },
+              "calibration_sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/calibration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "position_m",
+          "rotation_deg",
+          "properties"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "loot_crate",
+              "buy_station",
+              "player_spawn",
+              "loadout_drop",
+              "mission",
+              "poi",
+              "aircraft_keyframe"
+            ]
+          },
+          "position_m": {
+            "$ref": "#/$defs/v3"
+          },
+          "rotation_deg": {
+            "$ref": "#/$defs/v3"
+          },
+          "properties": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "nav": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "owner_map",
+              "kind",
+              "position_m",
+              "source"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner_map": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string"
+              },
+              "position_m": {
+                "$ref": "#/$defs/v3"
+              },
+              "source": {
+                "type": "string"
+              },
+              "properties": {
+                "type": "object"
+              },
+              "provenance": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "from",
+              "to",
+              "kind",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "walk",
+                  "drop",
+                  "climb",
+                  "jump",
+                  "mantle",
+                  "break_glass"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "proposed",
+                  "geometry_checked",
+                  "runtime_verified"
+                ]
+              },
+              "evidence": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source_path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "checked_at": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "synthetic": {
+                    "type": "boolean"
+                  },
+                  "runtime_build": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "condition": {
+                "type": "string",
+                "maxLength": 512
+              }
+            }
+          }
+        }
+      }
+    },
+    "geometry": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "coordinate_system": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connector": {
+            "type": "object",
+            "properties": {
+              "segments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "from_map",
+                    "to_map",
+                    "status"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "from_map": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "to_map": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "enum": [
+                        "proposed",
+                        "geometry_checked",
+                        "runtime_verified"
+                      ]
+                    },
+                    "evidence": {
+                      "type": "object"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "road",
+                        "bridge",
+                        "corridor",
+                        "tunnel",
+                        "building",
+                        "curve_road"
+                      ]
+                    },
+                    "from_portal": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "to_portal": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "bounds_m": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 6,
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "tactical_map": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_generated",
+            "generated"
+          ]
+        },
+        "bounds_m": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "number"
+          }
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width_px": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height_px": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pixel_to_world": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "number"
+          }
+        },
+        "world_to_pixel": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "number"
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "depiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "image": {
+          "$ref": "#/$defs/orthographic_image"
+        },
+        "manifest_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "asset_placements": {
+      "type": "array",
+      "description": "Optional editor visual instances with native model source bindings; no runtime collider or gameplay implementation.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "asset_id",
+          "owner_map",
+          "position_m",
+          "rotation_deg",
+          "scale",
+          "origin_offset_m",
+          "source",
+          "preview_bundle",
+          "collision_verified",
+          "runtime_integrated"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner_map": {
+            "type": "string",
+            "minLength": 1
+          },
+          "marker_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "position_m": {
+            "$ref": "#/$defs/v3"
+          },
+          "rotation_deg": {
+            "$ref": "#/$defs/v3"
+          },
+          "scale": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "origin_offset_m": {
+            "$ref": "#/$defs/v3"
+          },
+          "source": {
+            "type": "object"
+          },
+          "preview_bundle": {
+            "$ref": "#/$defs/preview_bundle"
+          },
+          "collision_verified": {
+            "const": false
+          },
+          "runtime_integrated": {
+            "const": false
+          }
+        }
+      }
+    },
+    "audio_zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "map_instance_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "position_m": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "rotation_deg": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "unverified",
+                  "source_bound"
+                ]
+              },
+              "source_path": {
+                "type": "string"
+              },
+              "source_sha256": {
+                "type": "string"
+              },
+              "source_record": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "source_path",
+              "source_sha256",
+              "source_record"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "runtime_integrated": {
+            "const": false
+          },
+          "kind": {
+            "enum": [
+              "music",
+              "ambient",
+              "radio"
+            ]
+          },
+          "shape": {
+            "enum": [
+              "box",
+              "cylinder",
+              "sphere"
+            ]
+          },
+          "dimensions_m": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "radius_m": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "inner_radius_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "height_m": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "alias_ref": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fade_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fade_in_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fade_out_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "asset_placement_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "map_instance_id",
+          "position_m",
+          "rotation_deg",
+          "evidence",
+          "enabled",
+          "runtime_integrated",
+          "kind",
+          "shape",
+          "dimensions_m",
+          "radius_m",
+          "inner_radius_m",
+          "height_m",
+          "alias_ref",
+          "priority",
+          "volume",
+          "fade_m",
+          "fade_in_s",
+          "fade_out_s"
+        ]
+      }
+    },
+    "action_elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "map_instance_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "position_m": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "rotation_deg": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "unverified",
+                  "source_bound"
+                ]
+              },
+              "source_path": {
+                "type": "string"
+              },
+              "source_sha256": {
+                "type": "string"
+              },
+              "source_record": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "source_path",
+              "source_sha256",
+              "source_record"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "runtime_integrated": {
+            "const": false
+          },
+          "kind": {
+            "enum": [
+              "destructible",
+              "loot_crate",
+              "buy_station",
+              "trigger"
+            ]
+          },
+          "radius_m": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "behavior_ref": {
+            "type": "string"
+          },
+          "marker_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "asset_placement_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "missing_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "health": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "explosion_radius_m": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "map_instance_id",
+          "position_m",
+          "rotation_deg",
+          "evidence",
+          "enabled",
+          "runtime_integrated",
+          "kind",
+          "radius_m",
+          "behavior_ref",
+          "marker_id",
+          "asset_placement_id",
+          "dependencies",
+          "missing_dependencies",
+          "health",
+          "explosion_radius_m"
+        ]
+      }
+    },
+    "composition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "map_instance_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "shape": {
+                "enum": [
+                  "RECTANGLE",
+                  "CIRCLE",
+                  "POLYGON"
+                ]
+              },
+              "polygon": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "polygon_local_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "height_m": {
+                "type": "number"
+              },
+              "biome": {
+                "enum": [
+                  "sand",
+                  "soil",
+                  "grass",
+                  "snow",
+                  "rock"
+                ]
+              },
+              "transition_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "confirmed": {
+                "type": "boolean"
+              },
+              "source": {
+                "const": "explicit_editor_design_region"
+              },
+              "physical_scale_verified": {
+                "const": false
+              },
+              "runtime_integrated": {
+                "const": false
+              },
+              "boundary_heights_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 256
+              },
+              "ground_capture": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "patch_id",
+                  "fingerprint",
+                  "source_meshes",
+                  "selected_faces",
+                  "boundary_samples",
+                  "collision_verified",
+                  "physical_scale_verified",
+                  "runtime_integrated"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "explicit_selected_ground_faces"
+                  },
+                  "patch_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fingerprint": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_meshes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "preview_id",
+                        "geometry_id",
+                        "mesh_vertex_count",
+                        "selected_face_count",
+                        "source_preview_sha256"
+                      ],
+                      "properties": {
+                        "preview_id": {
+                          "type": "string"
+                        },
+                        "geometry_id": {
+                          "type": "string"
+                        },
+                        "mesh_vertex_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "selected_face_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_preview_sha256": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "selected_faces": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "boundary_samples": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "collision_verified": {
+                    "const": false
+                  },
+                  "physical_scale_verified": {
+                    "const": false
+                  },
+                  "runtime_integrated": {
+                    "const": false
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "map_instance_id",
+              "shape",
+              "polygon",
+              "polygon_local_m",
+              "height_m",
+              "biome",
+              "transition_m",
+              "confirmed",
+              "source",
+              "physical_scale_verified",
+              "runtime_integrated"
+            ]
+          }
+        },
+        "terrain_tiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tile_x": {
+                "type": "integer"
+              },
+              "tile_y": {
+                "type": "integer"
+              },
+              "cells": {
+                "type": "integer",
+                "minimum": 4,
+                "maximum": 128
+              },
+              "cell_size_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "input_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "settings": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "seed": {
+                    "type": "integer"
+                  },
+                  "cells": {
+                    "type": "integer",
+                    "minimum": 4,
+                    "maximum": 128
+                  },
+                  "cell_size_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "noise_amplitude_m": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "noise_scale_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "sea_level_m": {
+                    "type": "number"
+                  },
+                  "bounds_m": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 4,
+                    "maxItems": 4
+                  },
+                  "texture_size": {
+                    "type": "integer",
+                    "minimum": 32,
+                    "maximum": 512
+                  },
+                  "texture_repeat_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "texture_images": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "sand": {
+                        "type": "string"
+                      },
+                      "soil": {
+                        "type": "string"
+                      },
+                      "grass": {
+                        "type": "string"
+                      },
+                      "snow": {
+                        "type": "string"
+                      },
+                      "rock": {
+                        "type": "string"
+                      },
+                      "asphalt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "sand",
+                      "soil",
+                      "grass",
+                      "snow",
+                      "rock"
+                    ]
+                  },
+                  "material_layers": {
+                    "$ref": "#/$defs/terrain_material_layers"
+                  },
+                  "heightfield_authoring": {
+                    "$ref": "#/$defs/heightfield_authoring"
+                  },
+                  "landscape_plan": {
+                    "$ref": "#/$defs/landscape_plan"
+                  },
+                  "material_bake": {
+                    "const": "sampled_weight_grid_v1"
+                  }
+                },
+                "required": [
+                  "seed",
+                  "cells",
+                  "cell_size_m",
+                  "noise_amplitude_m",
+                  "noise_scale_m",
+                  "sea_level_m",
+                  "bounds_m",
+                  "texture_size",
+                  "texture_repeat_m",
+                  "texture_images"
+                ]
+              },
+              "region_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "water_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "runtime_integrated": {
+                "const": false
+              },
+              "collision_verified": {
+                "const": false
+              },
+              "material_mode": {
+                "const": "baked_biome_albedo"
+              },
+              "texture_images": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sand": {
+                    "type": "string"
+                  },
+                  "soil": {
+                    "type": "string"
+                  },
+                  "grass": {
+                    "type": "string"
+                  },
+                  "snow": {
+                    "type": "string"
+                  },
+                  "rock": {
+                    "type": "string"
+                  },
+                  "asphalt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sand",
+                  "soil",
+                  "grass",
+                  "snow",
+                  "rock"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "tile_x",
+              "tile_y",
+              "cells",
+              "cell_size_m",
+              "input_sha256",
+              "settings",
+              "region_ids",
+              "water_ids",
+              "runtime_integrated",
+              "collision_verified",
+              "material_mode",
+              "texture_images"
+            ]
+          }
+        },
+        "water_features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "sea",
+                  "river"
+                ]
+              },
+              "position_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "points_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "maxItems": 2048
+              },
+              "width_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "depth_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "bank_width_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "level_m": {
+                "type": "number"
+              },
+              "extent_m": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "runtime_integrated": {
+                "const": false
+              },
+              "collision_verified": {
+                "const": false
+              },
+              "carve_terrain": {
+                "type": "boolean"
+              },
+              "coast_width_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "position_m",
+              "points_m",
+              "width_m",
+              "depth_m",
+              "bank_width_m",
+              "level_m",
+              "extent_m",
+              "runtime_integrated",
+              "collision_verified"
+            ]
+          }
+        },
+        "scatter_sets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "asset_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "map_instance_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "seed": {
+                "type": "integer"
+              },
+              "spacing_m": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "density": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "slope_max_deg": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 90
+              },
+              "biome": {
+                "enum": [
+                  "ALL",
+                  "sand",
+                  "soil",
+                  "grass",
+                  "snow",
+                  "rock"
+                ]
+              },
+              "input_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "placement_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "runtime_integrated": {
+                "const": false
+              },
+              "collision_verified": {
+                "const": false
+              },
+              "authoring_filters": {
+                "$ref": "#/$defs/scatter_authoring_filters"
+              },
+              "authoring_filters_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "id",
+              "asset_id",
+              "map_instance_id",
+              "seed",
+              "spacing_m",
+              "density",
+              "slope_max_deg",
+              "biome",
+              "input_sha256",
+              "placement_ids",
+              "runtime_integrated",
+              "collision_verified"
+            ]
+          }
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "material_layers": {
+          "$ref": "#/$defs/terrain_material_layers"
+        }
+      },
+      "required": [
+        "version",
+        "regions",
+        "terrain_tiles",
+        "water_features",
+        "scatter_sets",
+        "runtime_integrated",
+        "physical_scale_verified"
+      ]
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/editor_product_reference"
+      },
+      "minItems": 0,
+      "maxItems": 12,
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "v3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_path",
+        "source_sha256",
+        "measurement_basis",
+        "axis_mapping",
+        "offset_m",
+        "landmarks",
+        "max_error_m",
+        "synthetic"
+      ],
+      "properties": {
+        "basis": {
+          "enum": [
+            "measured_landmarks",
+            "export_registration"
+          ],
+          "description": "Absent means legacy measured_landmarks. Export registration does not verify physical scale."
+        },
+        "physical_scale_verified": {
+          "type": "boolean"
+        },
+        "registration": {
+          "$ref": "#/$defs/export_registration"
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "measurement_basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "axis_mapping": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "pattern": "^[+-]?[xXyYzZ]$"
+          }
+        },
+        "offset_m": {
+          "$ref": "#/$defs/v3"
+        },
+        "landmarks": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "local_m"
+            ],
+            "properties": {
+              "source": {
+                "$ref": "#/$defs/v3"
+              },
+              "local_m": {
+                "$ref": "#/$defs/v3"
+              }
+            }
+          }
+        },
+        "max_error_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "source_units_to_meter": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "orthographic_image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "width_px",
+        "height_px",
+        "bounds_m",
+        "kind",
+        "physical_scale_verified",
+        "source_fingerprint",
+        "projection"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width_px": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        },
+        "height_px": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        },
+        "bounds_m": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "number"
+          }
+        },
+        "kind": {
+          "const": "orthographic_preview"
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "source_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "projection": {
+          "type": "object"
+        }
+      }
+    },
+    "preview_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_path",
+        "reference_sha256",
+        "resources"
+      ],
+      "properties": {
+        "reference_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "export_registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reference_path",
+        "reference_sha256",
+        "resources",
+        "native_source_path",
+        "native_source_sha256",
+        "landmark_evidence_path",
+        "landmark_evidence_sha256",
+        "method",
+        "exporter_sha256",
+        "physical_scale_verified"
+      ],
+      "properties": {
+        "kind": {
+          "const": "export_registration"
+        },
+        "reference_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "native_source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "native_source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "landmark_evidence_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "landmark_evidence_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exporter_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "physical_scale_verified": {
+          "const": false
+        }
+      }
+    },
+    "terrain_material_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "material": {
+          "enum": [
+            "sand",
+            "soil",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt"
+          ]
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "height_range_m": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "slope_range_deg": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 90
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "moisture_range": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "height_falloff_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "slope_falloff_deg": {
+          "type": "number",
+          "minimum": 0
+        },
+        "moisture_falloff": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "id",
+        "material",
+        "strength",
+        "enabled",
+        "height_range_m",
+        "slope_range_deg",
+        "moisture_range",
+        "height_falloff_m",
+        "slope_falloff_deg",
+        "moisture_falloff"
+      ]
+    },
+    "terrain_material_mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "polygon": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 3,
+          "maxItems": 256
+        },
+        "material": {
+          "enum": [
+            "sand",
+            "soil",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "falloff_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "polygon",
+        "material",
+        "enabled",
+        "strength",
+        "falloff_m"
+      ]
+    },
+    "terrain_material_layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_terrain_material_layers"
+        },
+        "version": {
+          "const": 1
+        },
+        "channels": {
+          "const": [
+            "sand",
+            "soil",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt"
+          ]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/terrain_material_rule"
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "masks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/terrain_material_mask"
+          },
+          "minItems": 0,
+          "maxItems": 1024
+        },
+        "coordinate_space": {
+          "const": "world_editor_design_metres"
+        },
+        "physical_scale_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "channels",
+        "rules",
+        "masks",
+        "coordinate_space",
+        "physical_scale_verified"
+      ]
+    },
+    "scatter_filter_values": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_height_m": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max_height_m": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min_water_distance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_water_distance_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "navigation_clearance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "interaction_clearance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "collision_clearance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "material": {
+          "enum": [
+            "sand",
+            "soil",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt",
+            null
+          ]
+        },
+        "material_min_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "allow_underwater": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "min_height_m",
+        "max_height_m",
+        "min_water_distance_m",
+        "max_water_distance_m",
+        "navigation_clearance_m",
+        "interaction_clearance_m",
+        "collision_clearance_m",
+        "material",
+        "material_min_weight",
+        "allow_underwater"
+      ]
+    },
+    "scatter_clearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "kind": {
+          "enum": [
+            "navigation",
+            "interaction",
+            "collision"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 1,
+          "maxItems": 2048
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "points",
+        "radius_m"
+      ]
+    },
+    "scatter_exclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "polygon": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 3,
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "id",
+        "polygon"
+      ]
+    },
+    "scatter_source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "kind": {
+          "enum": [
+            "nav_node",
+            "nav_edge",
+            "action_element",
+            "gameplay_prefab",
+            "explicit_xy_exclusion"
+          ]
+        },
+        "status": {
+          "const": "proposed"
+        },
+        "from_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "to_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "action_element_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "collision_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ]
+    },
+    "scatter_authoring_filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_scatter_authoring_filters"
+        },
+        "version": {
+          "const": 1
+        },
+        "filters": {
+          "$ref": "#/$defs/scatter_filter_values"
+        },
+        "clearances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scatter_clearance"
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scatter_exclusion"
+          },
+          "minItems": 0,
+          "maxItems": 1024
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scatter_source_ref"
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "collision_verified": {
+          "const": false
+        },
+        "navigation_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "filters",
+        "clearances",
+        "exclusions",
+        "source_refs",
+        "physical_scale_verified",
+        "collision_verified",
+        "navigation_verified"
+      ]
+    },
+    "editor_product_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "kind": {
+          "enum": [
+            "wz09_gameplay_prefabs",
+            "wz09_animation_studio",
+            "wz09_cinematic_timeline",
+            "wz09_poi_labels",
+            "wz09_asset_dependencies",
+            "wz09_navigation",
+            "wz09_audio_zones",
+            "wz09_action_elements",
+            "wz09_runtime_world",
+            "wz09_intro_runtime",
+            "wz09_royale_layout",
+            "wz09_terrain_collision"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?:[^/\\\\:\\x00-\\x1f]+/)*[^/\\\\:\\x00-\\x1f]+\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "runtime_integrated": {
+          "const": false
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "sha256",
+        "runtime_integrated"
+      ]
+    },
+    "heightfield_operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "raise",
+            "lower",
+            "smooth",
+            "flatten",
+            "thermal_erosion",
+            "height_image",
+            "road_profile"
+          ]
+        },
+        "center_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000.0
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000.0
+        },
+        "target_height_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -100000000.0,
+          "maximum": 100000000.0
+        },
+        "changed_samples": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 263169
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "talus_deg": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 89
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.5
+        },
+        "transported_height_sum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1e+16
+        },
+        "source_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "scale_m": {
+          "type": "number",
+          "minimum": -100000000.0,
+          "maximum": 100000000.0
+        },
+        "offset_m": {
+          "type": "number",
+          "minimum": -100000000.0,
+          "maximum": 100000000.0
+        },
+        "flip_y": {
+          "type": "boolean"
+        },
+        "channel": {
+          "const": "red_or_grayscale"
+        },
+        "route_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "route_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "shoulder_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000.0
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "heightfield_authoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_heightfield_authoring"
+        },
+        "version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "bounds_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 513
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 513
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 4,
+          "maxItems": 263169
+        },
+        "locked": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 4,
+          "maxItems": 263169
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/heightfield_operation"
+          },
+          "minItems": 0,
+          "maxItems": 1024
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "id",
+        "bounds_m",
+        "width",
+        "height",
+        "samples",
+        "locked",
+        "source_sha256",
+        "operations"
+      ]
+    },
+    "landscape_plan_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "source_map": {
+          "enum": [
+            "mp_afghan",
+            "mp_boneyard",
+            "mp_brecourt",
+            "mp_checkpoint",
+            "mp_derail",
+            "mp_estate",
+            "mp_favela",
+            "mp_highrise",
+            "mp_invasion",
+            "mp_nightshift",
+            "mp_quarry",
+            "mp_rundown",
+            "mp_rust",
+            "mp_subbase",
+            "mp_terminal",
+            "mp_underpass"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "source_position_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "position_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "source_rotation_deg": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "rotation_deg": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "delta_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -100000000.0,
+            "maximum": 100000000.0
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "central_transform_locked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "source_map",
+        "name",
+        "region",
+        "source_position_m",
+        "position_m",
+        "source_rotation_deg",
+        "rotation_deg",
+        "delta_m",
+        "central_transform_locked"
+      ]
+    },
+    "landscape_relief_feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "kind": {
+          "enum": [
+            "ridge",
+            "hill",
+            "basin"
+          ]
+        },
+        "points_m": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 1,
+          "maxItems": 2048
+        },
+        "width_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "points_m",
+        "width_m",
+        "height_m"
+      ]
+    },
+    "landscape_relief": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/landscape_relief_feature"
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "maximum_additive_height_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "minimum_additive_height_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "semantics": {
+          "const": "additive_before_core_protection_and_water_carve"
+        },
+        "organic_coast_radius_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "coast_transition_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "river_valley_width_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "features",
+        "maximum_additive_height_m",
+        "minimum_additive_height_m",
+        "semantics",
+        "organic_coast_radius_m",
+        "coast_transition_m"
+      ]
+    },
+    "landscape_biomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "northern_snow_start_y_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "northern_snow_full_y_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "snow_height_start_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "snow_height_full_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "eastern_sand_start_x_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "eastern_sand_full_x_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "city_center_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "city_radius_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "channels": {
+          "const": [
+            "sand",
+            "soil",
+            "grass",
+            "snow",
+            "rock",
+            "asphalt"
+          ]
+        }
+      },
+      "required": [
+        "northern_snow_start_y_m",
+        "northern_snow_full_y_m",
+        "snow_height_start_m",
+        "snow_height_full_m",
+        "eastern_sand_start_x_m",
+        "eastern_sand_full_x_m",
+        "city_center_m",
+        "city_radius_m",
+        "channels"
+      ]
+    },
+    "landscape_terrain_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "cells": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "cell_size_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        },
+        "texture_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "noise_amplitude_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000000.0
+        },
+        "noise_scale_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 10000000.0
+        }
+      },
+      "required": [
+        "seed",
+        "cells",
+        "cell_size_m",
+        "texture_size",
+        "noise_amplitude_m",
+        "noise_scale_m"
+      ]
+    },
+    "landscape_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wz09_karvorsk_landscape_plan"
+        },
+        "version": {
+          "const": 1
+        },
+        "units": {
+          "const": "editor_design_meters"
+        },
+        "maps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/landscape_plan_map"
+          },
+          "minItems": 16,
+          "maxItems": 16
+        },
+        "bounds_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -10000000.0,
+            "maximum": 10000000.0
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "inward_design_units": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 500
+        },
+        "source_maps_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "relief": {
+          "$ref": "#/$defs/landscape_relief"
+        },
+        "biomes": {
+          "$ref": "#/$defs/landscape_biomes"
+        },
+        "terrain": {
+          "$ref": "#/$defs/landscape_terrain_settings"
+        },
+        "elevated_map_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "minItems": 0,
+          "maxItems": 16,
+          "uniqueItems": true
+        },
+        "elevated_ground_m": {
+          "type": "number",
+          "minimum": -10000000.0,
+          "maximum": 10000000.0
+        },
+        "physical_scale_verified": {
+          "const": false
+        },
+        "collision_verified": {
+          "const": false
+        },
+        "runtime_integrated": {
+          "const": false
+        },
+        "available_map_count": {
+          "const": 16
+        },
+        "unavailable_maps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "minItems": 0,
+          "maxItems": 16
+        },
+        "native_edits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "terminal": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "highrise": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          "required": [
+            "terminal",
+            "highrise"
+          ]
+        },
+        "river": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "width_m": {
+              "type": "number",
+              "minimum": 0.001,
+              "maximum": 10000000.0
+            },
+            "bank_width_m": {
+              "type": "number",
+              "minimum": 0.001,
+              "maximum": 10000000.0
+            },
+            "depth_m": {
+              "type": "number",
+              "minimum": 0.001,
+              "maximum": 10000000.0
+            },
+            "points_m": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -100000000.0,
+                  "maximum": 100000000.0
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "minItems": 2,
+              "maxItems": 2048
+            },
+            "status": {
+              "const": "proposed_editor_watercourse"
+            }
+          },
+          "required": [
+            "id",
+            "width_m",
+            "bank_width_m",
+            "depth_m",
+            "points_m",
+            "status"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "version",
+        "units",
+        "maps",
+        "bounds_m",
+        "inward_design_units",
+        "source_maps_sha256",
+        "sha256",
+        "relief",
+        "biomes",
+        "terrain",
+        "elevated_map_ids",
+        "elevated_ground_m",
+        "physical_scale_verified",
+        "collision_verified",
+        "runtime_integrated",
+        "available_map_count",
+        "unavailable_maps",
+        "native_edits",
+        "river"
+      ]
+    }
+  }
+}
