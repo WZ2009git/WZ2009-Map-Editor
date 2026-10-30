@@ -22,6 +22,7 @@ def module(name):
     value=importlib.util.module_from_spec(spec);sys.modules[spec.name]=value;spec.loader.exec_module(value)
     return value
 original=module('original_assets');setup=module('installation_setup')
+workspace=module('public_workspace')
 
 class PortableSetupTests(unittest.TestCase):
     def setUp(self):
@@ -86,5 +87,22 @@ class PortableSetupTests(unittest.TestCase):
         with self.assertRaises(ValueError): setup.atomic_json(path,dict(invalid=float('nan')))
         self.assertEqual(json.loads(path.read_text()),dict(valid=True))
         self.assertFalse(list(path.parent.glob('*.tmp')))
+    def test_eviction_preserves_live_and_foreign_dependencies(self):
+        class ID:
+            def __init__(self): self.use_fake_user=True
+            def as_pointer(self): return id(self)
+        scene=ID();scene.collection=ID()
+        foreign=ID();foreign.node_tree=ID()
+        proxy=ID();mesh=ID();unused_mesh=ID();unused_image=ID();foreign_image=ID()
+        values=[scene.collection,foreign,proxy,mesh,unused_mesh,unused_image,foreign_image]
+        users={proxy:{scene.collection},mesh:{proxy},foreign_image:{foreign.node_tree}}
+        removed=[]
+        bpy=types.SimpleNamespace(data=types.SimpleNamespace(user_map=lambda:users,batch_remove=lambda *,ids:removed.extend(ids)))
+        residency=types.ModuleType(PACKAGE+'.map_residency');residency.all_ids=lambda:iter(values)
+        with patch.dict(sys.modules,{'bpy':bpy,PACKAGE+'.map_residency':residency}):
+            workspace._evict_temporary_data({foreign.as_pointer()},scene)
+        self.assertEqual(set(removed),{unused_mesh,unused_image})
+        self.assertFalse(unused_image.use_fake_user)
+        self.assertTrue(foreign_image.use_fake_user)
 
 if __name__=='__main__': unittest.main(verbosity=2)

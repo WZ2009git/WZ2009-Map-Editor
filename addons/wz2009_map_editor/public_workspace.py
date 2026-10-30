@@ -14,6 +14,7 @@ def _evict_temporary_data(before,scene):
     keep=(current-additions)|{scene,scene.collection}
     users=bpy.data.user_map()
     while True:
+        keep.update(value.node_tree for value in tuple(keep) if getattr(value,'node_tree',None) is not None)
         retained={value for value in additions-keep if users.get(value,set()) & keep}
         if not retained: break
         keep.update(retained)
@@ -173,10 +174,7 @@ def build_map(scene,root,row,reference,project,output):
     bpy.context.view_layer.objects.active=root
     city_view_cache.bake(bpy.context)
     proxy=bpy.context.active_object
-    gray=bpy.data.materials.get('Map overview') or bpy.data.materials.new('Map overview')
-    gray.diffuse_color=(.58,.6,.57,1)
-    proxy.data.materials.clear(); proxy.data.materials.append(gray)
-    proxy.data.polygons.foreach_set('material_index',np.zeros(len(proxy.data.polygons),np.int32))
+    map_residency.lighten_public_proxy(proxy)
     map_residency.simplify_proxy(proxy)
     bpy.data.batch_remove(ids=list(collection.all_objects)+[collection])
     for mesh in cache.values(): bpy.data.meshes.remove(mesh)

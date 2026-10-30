@@ -274,6 +274,18 @@ def _evict(ctx, root, layer):
             if proxy.get(overview_preview.PROXY) == str(root['wz09_id']): proxy.hide_set(False)
 
 
+def lighten_public_proxy(proxy):
+    """Keep overview meshes from retaining native textures after eviction."""
+    import bpy
+    import numpy as np
+    material=bpy.data.materials.get('WZ2009 lightweight overview')
+    if material is None:
+        material=bpy.data.materials.new('WZ2009 lightweight overview')
+        material.diffuse_color=(.58,.6,.57,1)
+    proxy.data.materials.clear(); proxy.data.materials.append(material)
+    proxy.data.polygons.foreach_set('material_index',np.zeros(len(proxy.data.polygons),np.int32))
+
+
 def unload(ctx, root=None):
     from . import city_editing as city, city_view_cache
     root = root or city.map_root(ctx.active_object)
@@ -287,6 +299,7 @@ def unload(ctx, root=None):
             ctx.view_layer.objects.active = root
             city_view_cache.bake(ctx)
             simplify_proxy(ctx.active_object)
+            if ctx.scene.get('wz09_public_project'): lighten_public_proxy(ctx.active_object)
         finally:
             ctx.view_layer.objects.active = active if active and active.name in ctx.scene.objects else root
     for layer in layers: _evict(ctx, root, layer)
