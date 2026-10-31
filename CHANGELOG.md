@@ -1,5 +1,49 @@
 # Update log
 
+## 0.10.4 - October 31, 2026
+
+### Consistent editable map parts
+
+- Load map details prepares disconnected core geometry as separate parts and restores native prop placements as individual objects. Existing parts and saved edits are retained.
+- Prepared versioned libraries are reused by map-instance ID and source-library SHA-256. Loading a prepared library does not repeat the split. Original workspaces and source libraries are preserved.
+- Repeated props keep shared mesh data for memory efficiency. Edit selected mesh faces targets the chosen prepared part and makes a shared prop mesh independent before editing that placement.
+- Preparing all prop groups uses one batch removal of the old instance hosts and avoids redundant per-placement material-slot assignments.
+- New preparation data receives residency tokens so it can be released when unloading a map. Repeated props remain omitted from lightweight overview baking, matching their former instanced-preview behaviour.
+- The sidebar reports prepared geometry and mesh counts, and permits preparation of an already loaded legacy map.
+- Each newly serialized assembly wrapper receives its own object ID. Coincident nested empty wrappers with a legacy ID collision can be repaired in the derived copy; map, mesh, part and prop identities are preserved. Other identity collisions are rejected.
+
+### Local preparation verified
+
+- Prepared and reopened versioned libraries for all 23 current map instances, containing 34,800 tracked geometry parts and 111,953 individual prop placements. These counts exclude some already-separate untracked geometry; total library object counts also include assembly/helper objects.
+- Preserved source-library hashes, existing part geometry/IDs, map-instance IDs and map placement. Saved resident Invasion edits were checkpointed before preparing other maps.
+- Headless fixtures cover automatic preparation, source-bound cache reuse without repeat splitting, shared meshes, independent selected-prop editing, object material overrides, saved-library reopening and unique IDs after repeated saves.
+- Existing regression suite: 1,195 tests, six existing skips, no failures or errors. Eleven focused parts/cache/identity checks plus the existing preview, copy, editor-repair and portable-setup checks passed.
+
+Core separation uses geometric connectivity, not inferred building semantics. Connected structures can still require face editing. Original outskirts remain a separately loaded layer. Geometry changes still require export/runtime validation; the existing Favela full-city restore duplicate-source safeguard is unchanged. Portable project reconstruction remains under verification, and private prepared Blender libraries are not distributed in this repository.
+
+## 0.10.3 - October 31, 2026
+
+### Map switching and consistent previews
+
+- Fixed loading another map after details are already loaded. The save/unload preview rebuild now accepts mixed native `Color` formats instead of stopping before the target map loads.
+- Fixed a second switching failure caused by reading Blender objects after eviction had deleted them. The loader now snapshots only persistent map roots before unloading.
+- Preview baking supports mirrored static props with corrected winding, UV, colour and normal corner order. Singular transforms still produce an explicit error. Original editable geometry is unchanged.
+- Compatible vertex/corner colour layers are promoted to linear floating-point corner colours in the derived preview. Incompatible non-colour attributes retain separate derived channels.
+- Preview reduction keeps the unreduced derived mesh if decimation changes its bounds excessively or removes all faces.
+
+### Local workspace repair
+
+Rebuilt and reopened all 23 map-instance previews from their existing detail libraries in a new workspace. Persistent map IDs, placements, detail geometry and original library files were preserved. Highrise's stale overview is replaced with geometry derived from its correct detail assembly. The original workspace remains available.
+
+These are lightweight geometry previews. Fine instanced props and full textured appearance still belong to the loaded detail assembly. Private Blender workspaces and game assets are not distributed with this source update. The pre-existing Favela duplicate-ID restriction on full-city restoration remains unchanged.
+
+### Validation
+
+- Eight focused regressions for native attribute compatibility, missing buffers and deleted-object handling.
+- Existing regression suite: 1,195 tests, six existing skips, no failures or errors.
+- Headless Blender: original split/cache fixtures, mixed colour formats, mirrored winding/UV/colour data, preserved source geometry, all 23 rebuilt previews and saved-workspace reopening.
+- No live game tests or game-project changes.
+
 ## 0.10.2 — October 31, 2026
 
 ### Faster editable map loading

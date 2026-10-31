@@ -11,6 +11,39 @@ SNAPSHOT='wz09_city_cache_source_digest'
 OBJECT_ID='wz09_city_cache_object_id'
 
 
+def preview_attribute_plan(captures):
+    """Unify compatible colours; namespace incompatible derived-only channels."""
+    variants={}
+    for data in captures:
+        for name,domain,kind,prop,values in data['attributes']:
+            if domain=='EDGE' or name=='material_index':continue
+            variants.setdefault(name,set()).add((domain,kind,prop,values.shape[1]))
+    result={};reserved=set(variants)
+    for name,schemas in sorted(variants.items()):
+        if len(schemas)==1:
+            result[name]=dict(schema=next(iter(schemas)),sources={(name,*next(iter(schemas)))})
+        elif all(s[0] in {'POINT','CORNER'} and s[1] in {'BYTE_COLOR','FLOAT_COLOR'} and s[2:] == ('color',4) for s in schemas):
+            result[name]=dict(schema=('CORNER','FLOAT_COLOR','color',4),sources={(name,*s) for s in schemas})
+        else:
+            for schema in sorted(schemas):
+                alias=name+'__'+schema[0]+'_'+schema[1]
+                while alias in reserved:alias+='_'
+                reserved.add(alias)
+                result[alias]=dict(schema=schema,sources={(name,*schema)})
+    return result
+
+
+def preview_attribute_values(data,attribute,np):
+    domain,kind,prop,width=attribute['schema']
+    for name,source_domain,source_kind,source_prop,values in data['attributes']:
+        if (name,source_domain,source_kind,source_prop,values.shape[1]) not in attribute['sources']:continue
+        if source_domain=='POINT' and domain=='CORNER':return values[data['vertices']]
+        return values
+    count={'POINT':len(data['co']),'FACE':len(data['totals']),'CORNER':len(data['vertices'])}[domain]
+    dtype=np.bool_ if kind=='BOOLEAN' else np.float32 if kind in {'FLOAT','FLOAT_VECTOR','FLOAT2','FLOAT_COLOR','BYTE_COLOR'} else np.int32
+    return np.zeros((count,width),dtype=dtype)
+
+
 def states(scene):
     return json.loads(scene.get(STATES,'{}'))
 
@@ -31,7 +64,7 @@ def _inputs(scene, root):
     for obj in collection.all_objects:
         if obj.type!='MESH' or not obj.data.polygons or obj.get('wz09_editor_overlay'):
             continue
-        if obj.get('wz09_compact_records_json'):
+        if obj.get('wz09_compact_records_json') or obj.get('wz09_individual_asset'):
             continue  # Repeated detail props remain in the editable source only.
         if obj.hide_viewport or obj.hide_get():
             continue
@@ -42,8 +75,8 @@ def _inputs(scene, root):
             identity=str(uuid.uuid4());obj[OBJECT_ID]=identity
         seen.add(identity)
         matrix=np.array(inverse@obj.matrix_world,dtype=np.float64)
-        if np.linalg.det(matrix[:3,:3])<=1e-12:
-            raise ValueError('Mirrored or singular geometry cannot be silently baked')
+        if abs(np.linalg.det(matrix[:3,:3]))<=1e-12:
+            raise ValueError('Singular geometry cannot be baked into a map preview: '+obj.name)
         captured=_capture(obj.data)
         entries.append((identity,obj,captured,matrix))
     entries.sort(key=lambda row:row[0])
@@ -108,22 +141,22 @@ def bake(ctx):
     proxy=None
     try:
         coords=[];loops=[];starts=[];totals=[];smooth=[];normals=[];materials=[];material_ids=[]
-        slots={};attributes={};vo=lo=0
+        slots={};vo=lo=0
         # Union schemas first; absent UV/colour channels receive zero defaults.
+        attributes=preview_attribute_plan(row[2] for row in entries)
+        for attribute in attributes.values():attribute['values']=[]
         for _,obj,data,matrix in entries:
-            for name,domain,kind,prop,values in data['attributes']:
-                if domain=='EDGE' or name=='material_index':continue
-                key=(domain,kind,prop,values.shape[1])
-                if name in attributes and attributes[name]['schema']!=key:
-                    raise ValueError('Inconsistent preview attribute: '+name)
-                attributes.setdefault(name,dict(schema=key,values=[],dtype=values.dtype))
-        for _,obj,data,matrix in entries:
+            # A mirrored prop is valid source geometry. Reverse only the derived
+            # preview's corner order, including UVs, colours and split normals.
+            mirrored=np.linalg.det(matrix[:3,:3])<0
+            order=(np.repeat(data['starts']*2+data['totals']-1,data['totals'])-np.arange(len(data['vertices']))) if mirrored else None
             coords.append((data['co']@matrix[:3,:3].T+matrix[:3,3]).astype(np.float32))
-            loops.append(data['vertices']+vo);starts.append(data['starts']+lo)
+            loops.append((data['vertices'][order] if mirrored else data['vertices'])+vo);starts.append(data['starts']+lo)
             totals.append(data['totals']);smooth.append(data['smooth'])
             normal=data['normals']@np.linalg.inv(matrix[:3,:3])
             length=np.linalg.norm(normal,axis=1,keepdims=True)
-            normals.append((normal/np.maximum(length,1e-20)).astype(np.float32))
+            normal=(normal/np.maximum(length,1e-20)).astype(np.float32)
+            normals.append(normal[order] if mirrored else normal)
             old=np.empty(len(obj.data.polygons),dtype=np.int32)
             obj.data.polygons.foreach_get('material_index',old)
             used,local=np.unique(old,return_inverse=True)
@@ -135,11 +168,9 @@ def bake(ctx):
                 if key not in slots:slots[key]=len(materials);materials.append(material)
                 remap.append(slots[key])
             material_ids.append(np.asarray(remap,dtype=np.int32)[local])
-            available={row[0]:row for row in data['attributes']}
             for name,attribute in attributes.items():
-                domain,kind,prop,width=attribute['schema']
-                count={'POINT':len(data['co']),'FACE':len(data['totals']),'CORNER':len(data['vertices'])}[domain]
-                values=available[name][4] if name in available else np.zeros((count,width),dtype=attribute['dtype'])
+                values=preview_attribute_values(data,attribute,np)
+                if mirrored and attribute['schema'][0]=='CORNER':values=values[order]
                 attribute['values'].append(values)
             vo+=len(data['co']);lo+=len(data['vertices'])
         mesh.vertices.add(vertex_count);mesh.vertices.foreach_set('co',np.concatenate(coords).ravel())
@@ -162,6 +193,7 @@ def bake(ctx):
         proxy.parent=root;proxy[overview_preview.PROXY]=uid
         proxy['wz09_editor_overlay']=True;proxy['wz09_preview_only']=True
         proxy[SNAPSHOT]=snapshot;proxy['wz09_cache_mesh_objects']=len(entries)
+        proxy['wz09_preview_mirrored_inputs']=int(sum(np.linalg.det(row[3][:3,:3])<0 for row in entries))
         proxy.hide_render=True
         old=[o for o in ctx.scene.objects if o.get(overview_preview.PROXY)==uid]
         collection=old[0].users_collection[0] if old else ctx.scene.collection

@@ -131,10 +131,17 @@ def begin_mesh_edit(ctx):
                   and not o.get('wz09_compact_records_json')]
     # The native World is the large, uninstanced city mesh. Never use the overview.
     source = ctx.active_object
+    from . import map_parts,map_residency
+    resident=map_residency.resident(ctx.scene,root)
+    if resident is not None and map_parts.ready(resident):
+        if source.type!='MESH' or source.get('wz09_editor_overlay') or source.modifiers or not source.data.polygons:
+            raise ValueError('Select an individual mesh part or prop before editing faces')
+        candidates.append(source)
     if source not in candidates:
         if not candidates:
             raise ValueError('No editable city mesh found; restore a prop batch to edit props')
         source = max(candidates, key=lambda o: len(o.data.polygons))
+    map_parts.make_asset_mesh_unique(source)
     bpy.ops.object.select_all(action='DESELECT')
     source.hide_set(False)
     source.select_set(True)
@@ -459,8 +466,12 @@ def register():
         def execute(self,ctx):
             from .city_view_cache import load_assets
             try:
-                load_assets(ctx)
-                self.report({'INFO'},'Map details loaded; original geometry and detail instances are editable')
+                root=load_assets(ctx)
+                from . import map_parts,map_residency
+                collection=map_residency.resident(ctx.scene,root)
+                message=('Editable map parts and individual prop placements are ready'
+                         if collection and map_parts.ready(collection) else 'Map geometry loaded')
+                self.report({'INFO'},message)
                 return {'FINISHED'}
             except (ValueError,KeyError) as exc:
                 self.report({'ERROR'},str(exc)[:220]);return {'CANCELLED'}
@@ -521,12 +532,17 @@ def register():
 
     class WZ09_OT_city_mesh_edit(bpy.types.Operator):
         bl_idname = 'wz09.city_mesh_edit'
-        bl_label = 'Select building faces'
+        bl_label = 'Edit selected mesh faces'
+        bl_description = 'Edit the selected prepared part or prop; shared prop geometry becomes independent for this placement'
         bl_options = {'REGISTER', 'UNDO'}
         def execute(self, ctx):
             try:
-                begin_mesh_edit(ctx)
-                self.report({'INFO'}, 'Select faces with B or L, then Extract selection; buildings can contain disconnected faces')
+                edited=begin_mesh_edit(ctx)
+                from . import map_parts,map_residency
+                collection=map_residency.resident(ctx.scene,map_root(edited))
+                message=('Edit vertices, edges or faces. Tab returns to Object Mode.' if collection and map_parts.ready(collection)
+                         else 'Select faces with B or L, then Extract selection; buildings can contain disconnected faces')
+                self.report({'INFO'},message)
                 return {'FINISHED'}
             except (ValueError, RuntimeError) as exc:
                 self.report({'ERROR'}, str(exc)); return {'CANCELLED'}

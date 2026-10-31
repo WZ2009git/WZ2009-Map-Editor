@@ -114,7 +114,7 @@ def _piece(source, captured, faces):
         raise
 
 
-def split_city_steps(ctx):
+def split_city_steps(ctx, *, _groups=None):
     import bpy
     from array import array
     from . import city_editing as city, overview_preview
@@ -130,7 +130,7 @@ def split_city_steps(ctx):
     source = selected if selected in candidates else max(candidates,key=lambda o:len(o.data.polygons),default=None)
     if source is None or not source.data.polygons:
         raise ValueError('No unsplit map geometry selected')
-    groups = face_components(source.data)
+    groups = face_components(source.data) if _groups is None else _groups
     if len(groups) <= 1:
         raise ValueError('Geometry is already a single connected component')
     binding = city.source_binding(root)
@@ -165,7 +165,7 @@ def split_city_steps(ctx):
         working.attributes[city.FACE].data.foreach_get('value', source_face_ids)
         for number, faces in enumerate(groups,1):
             mesh, center = _piece(working,captured,faces)
-            obj = bpy.data.objects.new(f'Stadtteil {number:04d}',mesh)
+            obj = bpy.data.objects.new(f'Map part {number:04d}',mesh)
             made.append(obj)
             obj.parent=source;obj.location=center
             identity=str(uuid.uuid4())

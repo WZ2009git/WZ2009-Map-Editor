@@ -243,7 +243,7 @@ def compact(scene, minimum=4, progress=None):
                 maximum_trs_error=max_error)
 
 
-def restore(obj):
+def restore(obj, *, _parents_by_id=None, _remove_group=True):
     import bpy
     from mathutils import Matrix
     records = json.loads(obj[RECORDS])
@@ -261,23 +261,27 @@ def restore(obj):
     objects = []
     from .city_editing import map_root
     owner = map_root(obj)
-    parents_by_id={o.get('wz09_library_object_id'):o for o in owner.children_recursive if o.get('wz09_library_object_id')}
+    parents_by_id=(_parents_by_id if _parents_by_id is not None else
+                   {o.get('wz09_library_object_id'):o for o in owner.children_recursive if o.get('wz09_library_object_id')})
+    overrides=[(index,slot.material) for index,slot in enumerate(template.material_slots) if slot.link=='OBJECT']
+    local_membership=bool(owner.get('wz09_detail_library_json')) or any(c.get('wz09_overview_source_map_id') for c in collections)
     for row in records:
         made = bpy.data.objects.new(row['name'], template.data)
-        targets=([bpy.data.collections.get(name) or next((c for c in collections if c.name==name),None)
+        targets=(collections if local_membership else
+                 [bpy.data.collections.get(name) or next((c for c in collections if c.name==name),None)
                   for name in row['collections']] if row.get('collections') else collections)
-        if any(c.get('wz09_overview_source_map_id') for c in collections):targets=collections
         for coll in [c for c in targets if c is not None] or collections:
             coll.objects.link(made)
-        # Object material overrides are retained by copying the template.
-        for index, slot in enumerate(template.material_slots):
-            made.material_slots[index].link = slot.link
-            made.material_slots[index].material = slot.material
+        # DATA slots already come from the shared mesh. Reassigning thousands
+        # of identical slots repeatedly forces costly native user-map updates.
+        for index, material in overrides:
+            made.material_slots[index].link = 'OBJECT'
+            made.material_slots[index].material = material
         # After library reload old names need not exist. Map-local matrices
         # retain the correct assembly regardless of display names.
         parent_id = row.get('parent_id')
         parent = parents_by_id.get(parent_id)
-        if parent is None and not parent_id:
+        if parent is None and not parent_id and _parents_by_id is None:
             legacy = bpy.data.objects.get(row.get('parent', ''))
             if legacy is not None:
                 try:
@@ -288,10 +292,11 @@ def restore(obj):
         for k, v in row['properties'].items():
             made[k] = v
         made.hide_render = row['hide_render']; made.hide_select = row['hide_select']
-        made.color = row['color']; made.hide_set(row['hide_viewport'])
+        made.color = row['color']
+        if row['hide_viewport']:made.hide_set(True)
         made.hide_viewport = row.get('global_hidden', False)
         objects.append(made)
-    bpy.data.objects.remove(obj, do_unlink=True)
+    if _remove_group:bpy.data.objects.remove(obj, do_unlink=True)
     return objects
 
 

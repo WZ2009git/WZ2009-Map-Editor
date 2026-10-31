@@ -84,6 +84,10 @@ def write_library(scene, root, objects, directory, *, layer='core'):
     collection[OWNER] = identity; collection[LAYER] = layer
     records = _local_registry(scene, identity) if layer == 'core' else dict(meshes={}, parts={}, models={})
     collection['wz09_library_registry_json'] = json.dumps(records)
+    from . import map_parts
+    current=resident(scene,root,layer)
+    parts=json.loads(current.get(map_parts.READY,'{}')) if current and map_parts.ready(current) else None
+    if parts:collection[map_parts.READY]=json.dumps(parts)
     from . import city_editing as city
     baselines=[]
     for source_id in records['meshes']:
@@ -97,6 +101,10 @@ def write_library(scene, root, objects, directory, *, layer='core'):
     old_parent = root.parent
     old_kind = root.get('wz09_type')
     linked = list(objects) + [root]
+    # This serialization adds a new assembly wrapper; it is not the composition
+    # map instance or a prior wrapper retained inside the detail assembly.
+    old_object_identity=root.get('wz09_library_object_id')
+    root['wz09_library_object_id']=str(uuid.uuid4())
     for obj in linked:
         if not obj.get('wz09_library_object_id'): obj['wz09_library_object_id'] = str(uuid.uuid4())
     identities = {obj.name: obj['wz09_library_object_id'] for obj in linked}
@@ -121,12 +129,17 @@ def write_library(scene, root, objects, directory, *, layer='core'):
         root.matrix_basis = old_matrix
         if old_kind is not None: root['wz09_type'] = old_kind
         if 'wz09_library_root_id' in root: del root['wz09_library_root_id']
+        if old_object_identity is None:
+            if 'wz09_library_object_id' in root:del root['wz09_library_object_id']
+        else:root['wz09_library_object_id']=old_object_identity
         for obj, value in previous_roots.items(): obj['wz09_library_root_id'] = value
         bpy.data.collections.remove(collection)
         bpy.context.view_layer.update()
-    return dict(format=FORMAT, map_id=identity, source_map=str(root['wz09_source_map']),
+    result=dict(format=FORMAT, map_id=identity, source_map=str(root['wz09_source_map']),
                 layer=layer, path=str(path), sha256=sha(path), collection=collection_name,
                 objects=len(linked), native_source_sha256=json.loads(root.get('wz09_calibration_json', '{}')).get('registration', {}).get('native_source_sha256'))
+    if parts:result.update(editable_parts_format=map_parts.FORMAT,editable_parts=parts)
+    return result
 
 
 def resident(scene, root, layer='core'):
@@ -135,24 +148,36 @@ def resident(scene, root, layer='core'):
                  if c.get(OWNER) == identity and c.get(LAYER) == layer), None)
 
 
-def load(ctx, root=None, *, layer='core', _validate_copy=None):
+def unload_other_maps(ctx,root):
+    # Filter before eviction: the scene snapshot also contains detail objects
+    # that unload deletes. Never dereference those dead RNA handles afterward.
+    roots=[obj for obj in ctx.scene.objects
+           if obj.get('wz09_type')=='map_instance' and obj!=root]
+    for other in roots:
+        if resident(ctx.scene,other):unload(ctx,other)
+
+
+def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=True):
     import bpy
     from mathutils import Matrix
     from . import city_editing as city, overview_preview
     root = root or city.map_root(ctx.active_object)
     if ctx.mode != 'OBJECT': raise ValueError('Press Tab to finish mesh editing before loading details')
-    if resident(ctx.scene, root, layer): return root
+    from . import map_parts
+    if resident(ctx.scene, root, layer):
+        if layer=='core' and _prepare_parts:map_parts.ensure_saved(ctx,root)
+        return root
     started=time.perf_counter()
     key = LIBRARY if layer == 'core' else OUTER
     record = json.loads(root.get(key, '{}'))
+    original_record=record
+    if layer=='core' and _prepare_parts:record=map_parts.resolve(record,project_root())
     if record.get('format') != FORMAT or record.get('map_id') != str(root['wz09_id']) or record.get('source_map') != root['wz09_source_map'] or record.get('layer') != layer:
         raise ValueError('No matching verified detail/outskirts library available')
     path = safe_path(record['path'])
     if sha(path) != record['sha256']: raise ValueError('Detail file changed outside this workflow')
     # A second map is saved and evicted before loading another full assembly.
-    for other in tuple(ctx.scene.objects):
-        if other.get('wz09_type') == 'map_instance' and other != root and resident(ctx.scene, other):
-            unload(ctx, other)
+    unload_other_maps(ctx,root)
     before = {v.as_pointer() for v in all_ids()}
     token = uuid.uuid4().hex
     manager=ctx.window_manager
@@ -223,7 +248,6 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None):
         timing.update(map_id=str(root['wz09_id']),source_map=root['wz09_source_map'],layer=layer,
                       total_seconds=time.perf_counter()-started)
         ctx.scene['wz09_last_detail_load_json']=json.dumps(timing)
-        return root
     except BaseException:
         additions = [v for v in all_ids() if v.as_pointer() not in before]
         if additions: bpy.data.batch_remove(ids=additions)
@@ -231,6 +255,11 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None):
     finally:
         manager.progress_end()
         if workspace:workspace.status_text_set(None)
+    if record!=original_record:root[key]=json.dumps(record)
+    if layer=='core' and _prepare_parts:map_parts.ensure_saved(ctx,root,cache_source=original_record)
+    timing['total_seconds']=time.perf_counter()-started
+    ctx.scene['wz09_last_detail_load_json']=json.dumps(timing)
+    return root
 
 
 def save(ctx, root=None, *, layer='core'):
@@ -276,6 +305,12 @@ def _evict(ctx, root, layer):
     for child in collection.children_recursive: child[TOKEN] = token
     # Geometry created after append (split/extract/restore) belongs to this
     # collection too. Snapshot it before this operation.
+    # Detach the assembly once before freeing thousands of IDs. Otherwise each
+    # removal can also invalidate its live view-layer bases and hierarchy.
+    owners=[ctx.scene.collection,*ctx.scene.collection.children_recursive]
+    for owner in owners:
+        children=getattr(owner,'children',())
+        if any(child==collection for child in children):children.unlink(collection)
     bpy.data.batch_remove(ids=list(objects) + [collection])
     # Remove only IDs imported by this residency, and never referenced by another
     # map/scene. Clearing fake users is necessary for meshes/images to leave RAM.
@@ -336,6 +371,7 @@ def unload(ctx, root=None):
 def simplify_proxy(obj, ratio=.12):
     """Reduce only a derived overview copy; detail libraries stay lossless."""
     import bpy
+    import numpy as np
     from . import overview_preview
     if not obj.get(overview_preview.PROXY) or len(obj.data.polygons)<10000: return
     modifier=obj.modifiers.new('Light overview only','DECIMATE')
@@ -346,7 +382,22 @@ def simplify_proxy(obj, ratio=.12):
         replacement=bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
     finally:
         obj.modifiers.remove(modifier)
-    previous=obj.data; obj.data=replacement
+    previous=obj.data
+    if not replacement.vertices or not replacement.polygons:
+        bpy.data.meshes.remove(replacement)
+        return
+    def bounds(mesh):
+        coords=np.empty((len(mesh.vertices),3),np.float32)
+        mesh.vertices.foreach_get('co',coords.ravel())
+        return np.array([coords.min(axis=0),coords.max(axis=0)])
+    before=bounds(previous);after=bounds(replacement)
+    error=float(np.max(np.abs(before-after)))
+    obj['wz09_preview_lod_bounds_error']=error
+    # Keep the exact derived proxy if reduction changes its outline noticeably.
+    if error>max(float(np.max(before[1]-before[0]))*.005,1e-5):
+        bpy.data.meshes.remove(replacement)
+        return
+    obj.data=replacement
     if previous.users==0: bpy.data.meshes.remove(previous)
 
 
@@ -459,7 +510,13 @@ def draw(layout, ctx):
     try:
         root = city.map_root(ctx.active_object)
         box.prop(root,'["wz09_display_name"]',text='Name')
-        box.label(text=('Full details loaded' if resident(ctx.scene, root) else 'Overview only'),icon='INFO')
+        current=resident(ctx.scene,root)
+        from . import map_parts
+        box.label(text=('Editable map parts loaded' if current and map_parts.ready(current) else 'Full details loaded' if current else 'Overview only'),icon='INFO')
+        if current and map_parts.ready(current):
+            stats=json.loads(current[map_parts.READY])
+            box.label(text=f"Geometry parts: {stats.get('geometry_objects',stats.get('geometry_parts',0)):,}")
+            box.label(text=f"Editable meshes: {stats.get('mesh_objects',0):,}")
         box.label(text=('Outskirts loaded' if resident(ctx.scene, root,'outer') else 'Outskirts not loaded'))
         try:
             last=json.loads(ctx.scene.get('wz09_last_detail_load_json','{}'))
@@ -468,9 +525,9 @@ def draw(layout, ctx):
     except ValueError:
         help_text(box,'Select a map in the viewport or Outliner to begin.')
     column=box.column(); column.enabled=bool(root and root.get(LIBRARY))
-    load_button=column.column(); load_button.enabled=bool(root and not resident(ctx.scene,root))
+    load_button=column.column(); load_button.enabled=bool(root and (not resident(ctx.scene,root) or not map_parts.ready(resident(ctx.scene,root))))
     load_button.operator('wz09.city_assets_load', text='1. Load map details', icon='IMPORT')
-    help_text(column,'Load one map at full detail. Other maps stay as light previews.')
+    help_text(column,'Loads separate geometry pieces and individual prop placements. First preparation is saved and reused. Other maps stay as light previews.')
     outer_button=column.column(); outer_button.enabled=bool(root and root.get(OUTER))
     outer_button.operator('wz09.map_outskirts', text=('Save + unload outskirts' if root and resident(ctx.scene,root,'outer') else 'Load original outskirts'), icon='WORLD')
     help_text(column,'Optional original scenery outside the preserved map core.')
