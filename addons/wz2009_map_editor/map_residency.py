@@ -16,7 +16,6 @@ TOKEN = 'wz09_residency_token'
 FORMAT = 'wz09-map-library-v1'
 _CLASSES = []
 _HANDLE = None
-_PANEL_POLLS = []
 
 
 def project_root():
@@ -334,6 +333,35 @@ def toggle_outer(ctx):
         load(ctx, root, layer='outer')
 
 
+def workshop_label_items(scene):
+    """Match visible geometry to persistent map IDs, excluding copied fragments."""
+    from . import overview_preview
+    proxies={}
+    for obj in scene.objects:
+        identity=obj.get(overview_preview.PROXY)
+        if identity and obj.type=='MESH':
+            prior=proxies.get(str(identity))
+            if prior is None or len(obj.data.polygons)>len(prior.data.polygons):proxies[str(identity)]=obj
+    return [(obj,proxies.get(str(obj['wz09_id']))) for obj in scene.objects
+        if obj.get('wz09_type')=='map_instance' and obj.get('wz09_id') and not obj.get('wz09_original_map_instance_id')]
+
+
+def prepare_workshop_labels(scene,*,force=False):
+    import numpy as np
+    if not scene.get('wz09_library_workspace'):return
+    if force or scene.get('wz09_workshop_labels_version')!=2:
+        # These remain authored POI data. Only the duplicate, static viewport
+        # overlay is disabled; current map labels follow actual geometry.
+        scene.wz09_poi_preview=False
+        scene['wz09_workshop_labels_version']=2
+    for root,proxy in workshop_label_items(scene):
+        if proxy is None or not proxy.data.vertices:continue
+        if force or 'wz09_label_anchor_local' not in root:
+            coords=np.empty((len(proxy.data.vertices),3),np.float32)
+            proxy.data.vertices.foreach_get('co',coords.ravel())
+            root['wz09_label_anchor_local']=np.median(coords,axis=0).astype(float).tolist()
+
+
 def _draw_labels():
     import bpy
     import blf
@@ -344,15 +372,10 @@ def _draw_labels():
     if not ctx.region or not ctx.region_data or not getattr(ctx.scene, 'wz09_map_labels', False): return
     blf.size(0, round(16*ctx.preferences.system.ui_scale)); blf.color(0, .95, .88, .58, 1)
     blf.enable(0,blf.SHADOW); blf.shadow(0,3,0,0,0,.9); blf.shadow_offset(0,1,-1)
-    roots=[]; proxies={}
-    for obj in ctx.scene.objects:
-        if obj.get('wz09_type')=='map_instance': roots.append(obj)
-        if obj.get(overview_preview.PROXY): proxies[str(obj[overview_preview.PROXY])]=obj
-    for obj in roots:
-        proxy=proxies.get(str(obj['wz09_id']))
+    for obj,proxy in workshop_label_items(ctx.scene):
         anchor=obj.matrix_world.translation
         if proxy is not None and proxy.type=='MESH' and proxy.data.vertices:
-            center=sum((Vector(p) for p in proxy.bound_box),Vector())/8
+            center=Vector(obj.get('wz09_label_anchor_local',(0,0,0)))
             anchor=proxy.matrix_world@center
         point = location_3d_to_region_2d(ctx.region, ctx.region_data, anchor)
         if point:
@@ -363,7 +386,19 @@ def _draw_labels():
 
 def initialize_workshop_view(ctx):
     """Frame the composition on first user launch, preserving later saved views."""
+    prepare_workshop_labels(ctx.scene)
+    window=getattr(ctx,'window',None)
+    if window is None:window=next(iter(getattr(getattr(ctx,'window_manager',None),'windows',[])),None)
+    if ctx.scene.get('wz09_library_workspace') and window:
+        for area in window.screen.areas:
+            if area.type=='VIEW_3D':
+                # A saved initialized view may still contain thousands of old
+                # empty-object names and parent lines. These are not map labels.
+                area.spaces.active.overlay.show_extras=False
+                area.spaces.active.overlay.show_relationship_lines=False
+                area.spaces.active.overlay.show_text=False
     if not ctx.scene.get('wz09_library_workspace') or ctx.scene.get('wz09_workshop_view_initialized'): return
+    if window is None:return
     from mathutils import Vector, Euler
     from . import overview_preview
     points=[]
@@ -373,7 +408,7 @@ def initialize_workshop_view(ctx):
     lower=Vector(tuple(min(p[axis] for p in points) for axis in range(3)))
     upper=Vector(tuple(max(p[axis] for p in points) for axis in range(3)))
     center=(lower+upper)/2; distance=max((upper-lower).length,1000)
-    for area in ctx.window.screen.areas:
+    for area in window.screen.areas:
         if area.type!='VIEW_3D': continue
         space=area.spaces.active
         space.show_region_ui=True; space.show_region_toolbar=True
@@ -463,27 +498,14 @@ def register():
     global _HANDLE
     if not bpy.app.background:
         _HANDLE = bpy.types.SpaceView3D.draw_handler_add(_draw_labels, (), 'WINDOW', 'POST_PIXEL')
-    # Keep specialist panels available behind one explicit switch in library
-    # workspaces. Their original workspace/category conditions still apply.
-    for panel in bpy.types.Panel.__subclasses__():
-        if not panel.__module__.startswith('wz2009_map_editor') or panel.__name__=='WZ09_PT_main': continue
-        if getattr(panel,'bl_category','')!='WZ2009': continue
-        descriptor=panel.__dict__.get('poll')
-        previous=getattr(panel,'poll',None)
-        def poll(cls,ctx,prior=previous):
-            if ctx.scene.get('wz09_library_workspace') and not ctx.scene.wz09_map_advanced: return False
-            return bool(prior(ctx)) if prior else True
-        _PANEL_POLLS.append((panel,descriptor))
-        panel.poll=classmethod(poll)
+    # Registered Panel.poll methods are Blender RNA callbacks. Replacing one
+    # with a closure around its bound RNA method can recurse through Blender's
+    # C trampoline and crash Python. Keep each panel's original source poll.
 
 
 def unregister():
     import bpy
     global _HANDLE
-    for panel,descriptor in _PANEL_POLLS:
-        if descriptor is None: delattr(panel,'poll')
-        else: panel.poll=descriptor
-    _PANEL_POLLS.clear()
     if _HANDLE is not None: bpy.types.SpaceView3D.draw_handler_remove(_HANDLE, 'WINDOW'); _HANDLE = None
     for cls in reversed(_CLASSES): bpy.utils.unregister_class(cls)
     _CLASSES.clear()

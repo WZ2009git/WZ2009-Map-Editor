@@ -6,6 +6,8 @@ A Blender workshop for the WZ2009 project. Arrange maps in a lightweight composi
 
 Project updates: [@WZ_2009](https://x.com/WZ_2009).
 
+Current source version: **0.10.1**. See the [update log](CHANGELOG.md) for fixes, validation and known limitations.
+
 ## Requirements
 
 Windows 64-bit, Blender 5.2.2 or compatible, and your own original MW2009 installation. The current project requires exact original FastFile revisions. Setup checks the files before conversion and reports missing or incompatible files. Other language editions are not yet verified.

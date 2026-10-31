@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'WZ2009 MAP EDITOR', 'author': 'WARZONE 2009 project',
-    'version': (0, 10, 0), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
+    'version': (0, 10, 1), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
     'description':'Non-destructive Karvorsk maps, gameplay and waypoint authoring',
     'category':'3D View'
 }
@@ -828,6 +828,9 @@ classes=[WZ09_OT_init,WZ09_OT_add_map,WZ09_OT_add_marker,WZ09_OT_duplicate_map,
          WZ09_OT_export_json,WZ09_OT_preflight,WZ09_OT_tactical,WZ09_PT_main]
 
 def register():
+    # The explicit editor launcher can already have enabled this same module
+    # before Blender's Add-ons preferences invoke register again.
+    if getattr(WZ09_PT_main,'is_registered',False):return
     for cls in classes:bpy.utils.register_class(cls)
     bpy.types.Scene.wz09_workspace=EnumProperty(name='Workspace',items=[(v,l,'') for v,l in [('MAPS','Maps'),('ASSETS','Assets'),('WORLD','World'),('ACTIONS','Aktionen'),('AUDIO','Audio'),('PLACE','Place'),('GEOMETRY','Build'),('ANIMATION','Animation'),('CINEMATICS','Cinematics'),('POI','Locationsnamen'),('NAV','Navigation'),('EXPORT','Export')]],default='MAPS')
     bpy.types.Scene.wz09_show_advanced_import=BoolProperty(name='Manual import / source evidence',default=False)
