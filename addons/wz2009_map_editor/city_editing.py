@@ -26,6 +26,20 @@ def _write(scene, records):
     scene[REGISTRY] = json.dumps(records, sort_keys=True)
 
 
+def retained_baselines(scene,identity):
+    """Resolve undo baselines in this resident map, not another scene's cache."""
+    import bpy
+    meshes=[m for m in bpy.data.meshes if m.get('wz09_city_baseline_id')==identity]
+    entry=registry(scene)['meshes'].get(identity)
+    if entry:
+        from . import map_residency
+        tokens={c.get(map_residency.TOKEN) for c in getattr(getattr(scene,'collection',None),'children_recursive',())
+                if c.get(map_residency.OWNER)==entry['owner_map'] and c.get(map_residency.LAYER)=='core' and c.get(map_residency.TOKEN)}
+        scoped=[m for m in meshes if m.get(map_residency.TOKEN) in tokens]
+        if tokens:return scoped
+    return meshes
+
+
 def map_root(obj):
     while obj is not None:
         if obj.get('wz09_type') == 'map_instance':
@@ -42,6 +56,8 @@ def source_binding(root):
 
 def mesh_digest(mesh):
     """Geometry, UVs and material indices; object transforms are intentionally separate."""
+    from .material_palette import fingerprint_layout
+    palette,material_indices=fingerprint_layout(mesh)
     digest = hashlib.sha256()
     for items, prop, width, kind in ((mesh.vertices, 'co', 3, 'f'),
                                     (mesh.loops, 'vertex_index', 1, 'i'),
@@ -49,6 +65,9 @@ def mesh_digest(mesh):
                                     (mesh.polygons, 'material_index', 1, 'i')):
         values = array(kind, [0]) * (len(items) * width)
         items.foreach_get(prop, values)
+        if prop=='material_index' and material_indices is not None:
+            if any(index<0 or index>=len(material_indices) for index in values):raise ValueError('Invalid compact material index')
+            values=array('i',(material_indices[index] for index in values))
         digest.update(values.tobytes())
     for uv in mesh.uv_layers:
         values = array('f', [0]) * (len(uv.data) * 2)
@@ -59,7 +78,7 @@ def mesh_digest(mesh):
         values = array('i', [0]) * len(face_ids.data)
         face_ids.data.foreach_get('value', values)
         digest.update(values.tobytes())
-    digest.update(json.dumps([m.name_full if m else None for m in mesh.materials]).encode())
+    digest.update(json.dumps(palette).encode())
     return digest.hexdigest()
 
 
@@ -243,12 +262,12 @@ def restore_city(ctx):
     targets = [uid for uid, row in records['meshes'].items() if row['owner_map'] == root['wz09_id']]
     for uid in targets:
         sources = [o for o in ctx.scene.objects if o.get(SOURCE) == uid]
-        baselines = [m for m in bpy.data.meshes if m.get('wz09_city_baseline_id') == uid]
+        baselines = retained_baselines(ctx.scene,uid)
         if len(sources) != 1 or len(baselines) != 1:
             raise ValueError('Retained source or baseline missing/duplicated; restore from the saved .blend')
     for uid in targets:
         source = next(o for o in ctx.scene.objects if o.get(SOURCE) == uid)
-        baseline = next(m for m in bpy.data.meshes if m.get('wz09_city_baseline_id') == uid)
+        baseline = retained_baselines(ctx.scene,uid)[0]
         source.data = baseline.copy()
         del source.data['wz09_city_baseline_id']
         del source[SOURCE]

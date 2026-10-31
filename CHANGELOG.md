@@ -1,5 +1,25 @@
 # Update log
 
+## 0.10.2 — October 31, 2026
+
+### Faster editable map loading
+
+- Static map details now use a temporary library link followed by scoped local copies instead of Blender's global append/remapping path. Loaded objects, meshes, materials, textures and instance prototypes remain locally editable.
+- Sparse per-piece material slots share a retained full palette. Geometry, UVs, persistent face IDs, shared mesh instancing and material assignments are preserved; geometry is not decimated.
+- Core details and surrounding native terrain use the same loader. Existing animated or unsupported libraries retain the compatibility append path and may still load slowly.
+- Added loading phases in Blender's status bar and the last completed load duration in the sidebar. Loading remains synchronous and is not instantaneous.
+- Scoped retained undo baselines to the current resident map so another scene's cached baseline cannot be selected accidentally. Blender-generated library/name suffixes no longer invalidate geometry fingerprints.
+
+### Validation
+
+Local measured full-detail loads were approximately 25 seconds for Favela, 23 seconds for Highrise and 28 seconds for Terminal, including extra geometry verification. These headless runs used warmed OS caches and exclude saving/unloading the previous map; interactive and fresh-disk results may differ. Favela outskirts loaded in approximately four seconds.
+
+Local Blender 5.2 headless checks cover all 23 current map instances, source/copy geometry fingerprints, local editability, data eviction and preservation of original libraries and unrelated scenes. Additional fixtures cover packed images, object material overrides, instanced prototypes, saved compact material palettes and animated compatibility imports. Vertex, material and transform edits survived saving to a new library and reloading; surrounding Favela terrain loaded as local editable data.
+
+Existing Favela detail data contains two empty source objects with the same tracked source ID. Full-city restoration remains refused by the existing duplicate-ID guard; no restore history was guessed or rewritten. This does not prevent the verified load/edit/save workflow.
+
+No Rust extension was added: the measured bottleneck was Blender's native append/remapping and repeated material-slot updates. Portable project reconstruction remains under verification. This source update does not rewrite existing Blender workspaces or establish game-runtime support.
+
 ## 0.10.1 — October 31, 2026
 
 This source update fixes the WZ2009 sidebar crash and map-name display in composition workspaces.

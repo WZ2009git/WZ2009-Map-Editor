@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'WZ2009 MAP EDITOR', 'author': 'WARZONE 2009 project',
-    'version': (0, 10, 1), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
+    'version': (0, 10, 2), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
     'description':'Non-destructive Karvorsk maps, gameplay and waypoint authoring',
     'category':'3D View'
 }

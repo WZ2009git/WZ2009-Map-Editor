@@ -24,7 +24,7 @@ No game assets are downloaded. A source download may fetch the checksum-pinned s
 
 ## Editing
 
-The composition uses simplified overview geometry. Select a map and load its details when you need to edit individual elements. Save detail edits before unloading them. Load the map's outskirts separately when you need its surrounding native terrain. Keep unused maps unloaded to reduce memory and viewport work.
+The composition uses simplified overview geometry. Select a map and load its details when you need to edit individual elements. Save detail edits before unloading them. Static detail libraries use the fast editable loader; Blender shows loading phases and the last completed load duration. Large maps still take time, and animated/custom libraries may use the slower compatibility path. Load the map's outskirts separately when you need its surrounding native terrain. Keep unused maps unloaded to reduce memory and viewport work.
 
 **Browse local assets** opens the catalog. Geometry and textures are loaded from the verified local cache when needed. Large assets can still be expensive; the catalog itself does not require loading every model into the scene.
 

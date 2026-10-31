@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import uuid
+import time
 
 LIBRARY = 'wz09_detail_library_json'
 OUTER = 'wz09_outskirts_library_json'
@@ -83,7 +84,12 @@ def write_library(scene, root, objects, directory, *, layer='core'):
     collection[OWNER] = identity; collection[LAYER] = layer
     records = _local_registry(scene, identity) if layer == 'core' else dict(meshes={}, parts={}, models={})
     collection['wz09_library_registry_json'] = json.dumps(records)
-    baselines = [m for m in bpy.data.meshes if m.get('wz09_city_baseline_id') in records['meshes']]
+    from . import city_editing as city
+    baselines=[]
+    for source_id in records['meshes']:
+        matches=city.retained_baselines(scene,source_id)
+        if len(matches)!=1:raise ValueError('Retained source baseline is missing or ambiguous')
+        baselines.append(matches[0])
     collection['wz09_library_baselines_json'] = json.dumps([m.name for m in baselines])
     path = safe_path(directory / (identity + '-' + layer + '-' + uuid.uuid4().hex[:12] + '.blend'))
     old_matrix = root.matrix_basis.copy()
@@ -129,13 +135,14 @@ def resident(scene, root, layer='core'):
                  if c.get(OWNER) == identity and c.get(LAYER) == layer), None)
 
 
-def load(ctx, root=None, *, layer='core'):
+def load(ctx, root=None, *, layer='core', _validate_copy=None):
     import bpy
     from mathutils import Matrix
     from . import city_editing as city, overview_preview
     root = root or city.map_root(ctx.active_object)
     if ctx.mode != 'OBJECT': raise ValueError('Press Tab to finish mesh editing before loading details')
     if resident(ctx.scene, root, layer): return root
+    started=time.perf_counter()
     key = LIBRARY if layer == 'core' else OUTER
     record = json.loads(root.get(key, '{}'))
     if record.get('format') != FORMAT or record.get('map_id') != str(root['wz09_id']) or record.get('source_map') != root['wz09_source_map'] or record.get('layer') != layer:
@@ -148,18 +155,32 @@ def load(ctx, root=None, *, layer='core'):
             unload(ctx, other)
     before = {v.as_pointer() for v in all_ids()}
     token = uuid.uuid4().hex
+    manager=ctx.window_manager
+    workspace=getattr(ctx,'workspace',None)
+    def progress(phase,done,total):
+        base,span={'link':(0,15),'copy':(15,40),'remap':(55,35),'cleanup':(90,10)}[phase]
+        manager.progress_update(base+span*done/max(total,1))
+        if workspace:
+            message={'link':'Reading map file','copy':'Preparing editable assets','remap':'Connecting assets','cleanup':'Finalizing details'}[phase]
+            workspace.status_text_set(message+' ...')
+    manager.progress_begin(0,100)
     try:
-        with bpy.data.libraries.load(str(path), link=False) as (source, target):
-            if record['collection'] not in source.collections: raise ValueError('Detail-Sammlung fehlt')
-            target.collections = [record['collection']]
-            # Baselines may have fake users but no object dependencies.
-        collection = target.collections[0]
-        additions = [v for v in all_ids() if v.as_pointer() not in before]
-        for value in additions: value[TOKEN] = token
+        from .library_local_copy import append_editable,UnsupportedLibrary
+        try:
+            collection,timing=append_editable(path,record['collection'],all_ids,progress=progress,validate=_validate_copy)
+        except UnsupportedLibrary as exc:
+            # Keep compatibility with animated/custom libraries. Native static
+            # map libraries use scoped copying instead of global append remap.
+            additions=[v for v in all_ids() if v.as_pointer() not in before]
+            if additions:bpy.data.batch_remove(ids=additions)
+            with bpy.data.libraries.load(str(path),link=False) as (source,target):
+                if record['collection'] not in source.collections:raise ValueError('Detail collection is missing')
+                target.collections=[record['collection']]
+            collection=target.collections[0]
+            with bpy.data.libraries.load(str(path),link=False) as (source,target):
+                target.meshes=json.loads(collection.get('wz09_library_baselines_json','[]'))
+            timing=dict(mode='compatibility_append',reason=str(exc))
         collection[TOKEN] = token
-        with bpy.data.libraries.load(str(path), link=False) as (source, baseline_target):
-            names = json.loads(collection.get('wz09_library_baselines_json', '[]'))
-            baseline_target.meshes = names
         for value in all_ids():
             if value.as_pointer() not in before: value[TOKEN] = token
         roots = [o for o in collection.objects if o.get('wz09_library_root_id') == str(root['wz09_id'])]
@@ -187,7 +208,7 @@ def load(ctx, root=None, *, layer='core'):
                         obj['wz09_copied_edit_origin_json']=json.dumps(fields)
                         for key in fields: del obj[key]
             for kind in records:
-                if set(incoming[kind]) & set(records[kind]): raise ValueError('Doppelte Bearbeitungs-IDs beim Laden')
+                if set(incoming[kind]) & set(records[kind]): raise ValueError('Duplicate edit IDs while loading')
                 records[kind].update(incoming[kind])
             city._write(ctx.scene, records)
             states = json.loads(ctx.scene.get('wz09_city_view_states_json', '{}'))
@@ -199,11 +220,17 @@ def load(ctx, root=None, *, layer='core'):
         bpy.ops.object.select_all(action='DESELECT')
         root.hide_set(False); root.select_set(True)
         ctx.view_layer.objects.active = root
+        timing.update(map_id=str(root['wz09_id']),source_map=root['wz09_source_map'],layer=layer,
+                      total_seconds=time.perf_counter()-started)
+        ctx.scene['wz09_last_detail_load_json']=json.dumps(timing)
         return root
     except BaseException:
         additions = [v for v in all_ids() if v.as_pointer() not in before]
         if additions: bpy.data.batch_remove(ids=additions)
         raise
+    finally:
+        manager.progress_end()
+        if workspace:workspace.status_text_set(None)
 
 
 def save(ctx, root=None, *, layer='core'):
@@ -230,8 +257,8 @@ def save(ctx, root=None, *, layer='core'):
         if obj.type == 'MESH' and not obj.data.get(TOKEN): obj.data[TOKEN] = token
     if layer == 'core':
         mesh_ids = _local_registry(ctx.scene, str(root['wz09_id']))['meshes']
-        for mesh in bpy.data.meshes:
-            if mesh.get('wz09_city_baseline_id') in mesh_ids: mesh[TOKEN] = token
+        for source_id in mesh_ids:
+            for mesh in city.retained_baselines(ctx.scene,source_id):mesh[TOKEN]=token
     record = write_library(ctx.scene, root, objects, Path(previous['path']).parent, layer=layer)
     # The export includes master root plus prior assembly. Only the outermost
     # root carries the library root ID after this write.
@@ -434,6 +461,10 @@ def draw(layout, ctx):
         box.prop(root,'["wz09_display_name"]',text='Name')
         box.label(text=('Full details loaded' if resident(ctx.scene, root) else 'Overview only'),icon='INFO')
         box.label(text=('Outskirts loaded' if resident(ctx.scene, root,'outer') else 'Outskirts not loaded'))
+        try:
+            last=json.loads(ctx.scene.get('wz09_last_detail_load_json','{}'))
+            if last.get('map_id')==str(root['wz09_id']):box.label(text=f"Last load: {last['total_seconds']:.1f} s")
+        except (ValueError,TypeError,KeyError):pass
     except ValueError:
         help_text(box,'Select a map in the viewport or Outliner to begin.')
     column=box.column(); column.enabled=bool(root and root.get(LIBRARY))
