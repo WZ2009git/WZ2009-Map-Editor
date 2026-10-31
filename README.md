@@ -6,7 +6,22 @@ A Blender workshop for the WZ2009 project. Arrange maps in a lightweight composi
 
 Project updates: [@WZ_2009](https://x.com/WZ_2009).
 
-Current source version: **0.10.1**. See the [update log](CHANGELOG.md) for fixes, validation and known limitations.
+Current source version: **0.10.6**. See the [changelog](CHANGELOG.md) for fixes, validation and known limitations.
+
+## What the editor can do
+
+- Arrange maps together using lightweight overview geometry, then load one map's editable details when needed.
+- Prepare disconnected map geometry as individual parts and native props as separate placements. Prepared libraries are cached for later loads.
+- Move or rotate a whole map after splitting it, and adjust its world height using absolute Z values or raise/lower steps.
+- Load original surrounding terrain as editable outskirts, save changes and hide that layer independently.
+- Create an adjustable shared water reference to help align map heights and shorelines.
+- Browse assets resolved from your own MW2009 installation, without loading every asset into the scene.
+
+The current composition has 23 map instances, including copied fragments. This is not a claim of 23 different original maps. Private prepared Blender libraries and game assets are not included in the repository.
+
+## Current distribution status
+
+This is development source. The editor features have been checked in local workspaces, but full reconstruction of the portable current-map project is still under verification. A source download is not yet a verified ready-to-use distribution of the author's current edited map. The setup workflow below describes the available installation tools; it does not remove that limitation.
 
 ## Requirements
 
@@ -24,15 +39,38 @@ No game assets are downloaded. A source download may fetch the checksum-pinned s
 
 ## Editing
 
-The composition uses simplified overview geometry. Select a map and load its details when you need to edit individual elements. Save detail edits before unloading them. Static detail libraries use the fast editable loader; Blender shows loading phases and the last completed load duration. Large maps still take time, and animated/custom libraries may use the slower compatibility path. Load the map's outskirts separately when you need its surrounding native terrain. Keep unused maps unloaded to reduce memory and viewport work.
+### Load and edit a map
 
-Detail loading prepares disconnected map geometry as separate parts and restores native prop placements as individual objects. The prepared private libraries are reused on later loads. Connected architecture may remain one piece; use face editing for finer changes. **Edit selected mesh faces** makes a repeated prop's mesh independent before editing that placement. Entering Edit Mode directly through Blender retains Blender's normal linked-mesh behaviour.
+1. Select a map overview and choose **Load map details**. Other maps can remain lightweight previews.
+2. Select an individual part or prop. Use Blender's **G**, **R** and **S** to move, rotate or scale it.
+3. For vertex/edge/face editing, choose **Edit selected mesh faces**. This makes a shared prop mesh independent before editing that placement. Direct **Tab** entry retains Blender's normal linked-mesh behaviour.
+4. Use **Save detail version** to write a new detail library, or **Save + unload map** to save and release its loaded layers. Save the Blender composition afterward to retain the updated library references.
 
-**Map height and shared water** provides a map selector, **Select whole map - G / R**, absolute world-Z placement, raise/lower steps and explicit map-pivot alignment to a shared water level plus an offset. Split parts and loaded outskirts follow their map parent. The flat water reference reuses terrain sea settings; update it after changing its level, size or visibility. This preview does not run Ultra-Water simulation or establish physical source scale. The pivot is not a detected ground level. **Load outskirts as parts** prepares disconnected outskirts geometry and props once; **Save + hide outskirts** saves a new version before unloading. Save the composition to retain updated library references.
+Preparation separates geometry by connectivity, not by inferred buildings. Physically connected structures can remain one piece. Repeated props share mesh data to save memory until edited independently. Loading reuses prepared files; it is not instantaneous. Blender displays loading phases and the last completed duration. Animated/custom libraries may use the slower compatibility path.
+
+### Move a whole map or change its height
+
+In **Map height and shared water**, choose the map from the list or select one of its parts and click **Use map from selected part**. Choose **Select whole map - G / R** to move or rotate its parent, including split parts, props and loaded outskirts.
+
+Set **Target root Z** and click **Apply map height**, or use **Height step** with **Raise map / Lower map**. These values use Blender world units. The map root is a placement pivot, not a detected ground height; original-source physical scale remains unverified.
+
+### Edit surrounding terrain
+
+Choose **Load outskirts as parts**. Disconnected outskirts geometry and prop placements are prepared once and cached. After editing, choose **Save + hide outskirts** to save a new version and unload only that layer. Loading it again restores the saved version. Save the composition to keep its updated references.
+
+### Align against shared water
+
+Set **Water Z** and **Water width / length**, then choose **Create / update water reference**. **Fit water around current maps** fits the surface around the current overview bounds. Apply again after changing size, level or **Show water preview**.
+
+The surface is a flat, non-selectable editor reference. It does not recreate removed native water, carve terrain or move maps automatically. **Set root to water + offset** explicitly places the chosen map's pivot at the water level plus your offset; adjust the offset visually for its shoreline.
+
+Ultra-Water's FFT waves, foam, underwater rendering and buoyancy are **not integrated**. The current preview does not simulate water physics.
 
 See the [water and map-alignment guide](docs/WATER_ALIGNMENT.md) for the workflow and Ultra-Water integration assessment.
 
-**Browse local assets** opens the catalog. Geometry and textures are loaded from the verified local cache when needed. Large assets can still be expensive; the catalog itself does not require loading every model into the scene.
+### Browse assets and manage performance
+
+**Browse local assets** opens the catalog. Geometry and textures are loaded from the verified local cache when needed. Keep unused map details and outskirts unloaded to reduce memory and viewport work. Large maps and assets can still be expensive; a cached library avoids repeated preparation but still needs to be loaded into Blender.
 
 Map instances and editable elements have persistent IDs. Names are labels. Navigation connections remain proposed until validated; displayed connections do not prove traversability or collision clearance.
 
@@ -45,5 +83,7 @@ Setup logs are `.local/reconstruction.log` and the per-conversion logs inside `.
 ## Scope
 
 This is an editor and visual reconstruction workflow. It does not establish that exported edits are playable, collision-safe or supported by a game runtime. Existing source registration is retained; independent physical scale calibration remains unverified. The distributed project starts a fresh editing history; private source-workspace undo history is not included.
+
+The v0.10.6 work passed 54 focused checks and local headless checks for map movement, water reference settings and edited outskirts save/unload/reload. These checks are not a full-suite or portable-release certification. The changelog records outstanding legacy translation expectations, missing aircraft fixtures and reconstruction limitations.
 
 The repository contains editor code, project placements, native face-selection references and explicitly editor-authored landscape geometry. Original game meshes, textures, sound files and private Blender projects are excluded. Game content remains subject to its original owners' rights.
