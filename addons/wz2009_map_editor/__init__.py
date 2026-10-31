@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'WZ2009 MAP EDITOR', 'author': 'WARZONE 2009 project',
-    'version': (0, 10, 5), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
+    'version': (0, 10, 6), 'blender': (5, 0, 0), 'location':'3D View > N-Panel > WZ2009',
     'description':'Non-destructive Karvorsk maps, gameplay and waypoint authoring',
     'category':'3D View'
 }
@@ -878,10 +878,14 @@ def register():
     city_editing.register()
     from . import map_residency
     map_residency.register()
+    from . import map_alignment
+    map_alignment.register()
     from . import installation_setup
     installation_setup.register()
 
 def unregister():
+    from . import map_alignment
+    map_alignment.unregister()
     from . import installation_setup
     installation_setup.unregister()
     from . import map_residency

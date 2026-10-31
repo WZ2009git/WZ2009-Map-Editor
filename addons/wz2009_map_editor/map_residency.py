@@ -150,6 +150,14 @@ def resident(scene, root, layer='core'):
                  if c.get(OWNER) == identity and c.get(LAYER) == layer), None)
 
 
+def object_layer(scene,root,obj):
+    """Resolve a selected part by collection membership, never its name."""
+    for layer in ('outer','core'):
+        collection=resident(scene,root,layer)
+        if collection is not None and any(item==obj for item in collection.all_objects):return layer
+    return 'core'
+
+
 def unload_other_maps(ctx,root):
     # Filter before eviction: the scene snapshot also contains detail objects
     # that unload deletes. Never dereference those dead RNA handles afterward.
@@ -172,13 +180,13 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=Tr
     if ctx.mode != 'OBJECT': raise ValueError('Press Tab to finish mesh editing before loading details')
     from . import map_parts
     if resident(ctx.scene, root, layer):
-        if layer=='core' and _prepare_parts:map_parts.ensure_saved(ctx,root)
+        if _prepare_parts:map_parts.ensure_saved(ctx,root,layer=layer)
         return root
     started=time.perf_counter()
     key = LIBRARY if layer == 'core' else OUTER
     record = json.loads(root.get(key, '{}'))
     original_record=record
-    if layer=='core' and _prepare_parts:record=map_parts.resolve(record,project_root())
+    if _prepare_parts:record=map_parts.resolve(record,project_root())
     if record.get('format') != FORMAT or record.get('map_id') != str(root['wz09_id']) or record.get('source_map') != root['wz09_source_map'] or record.get('layer') != layer:
         raise ValueError('No matching verified detail/outskirts library available')
     path = safe_path(record['path'])
@@ -265,7 +273,7 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=Tr
         manager.progress_end()
         if workspace:workspace.status_text_set(None)
     if record!=original_record:root[key]=json.dumps(record)
-    if layer=='core' and _prepare_parts:map_parts.ensure_saved(ctx,root,cache_source=original_record)
+    if _prepare_parts:map_parts.ensure_saved(ctx,root,layer=layer,cache_source=original_record)
     timing['total_seconds']=time.perf_counter()-started
     ctx.scene['wz09_last_detail_load_json']=json.dumps(timing)
     return root
@@ -542,8 +550,8 @@ def draw(layout, ctx):
     load_button.operator('wz09.city_assets_load', text='1. Load map details', icon='IMPORT')
     help_text(column,'Loads separate geometry pieces and individual prop placements. First preparation is saved and reused. Other maps stay as light previews.')
     outer_button=column.column(); outer_button.enabled=bool(root and root.get(OUTER))
-    outer_button.operator('wz09.map_outskirts', text=('Save + unload outskirts' if root and resident(ctx.scene,root,'outer') else 'Load original outskirts'), icon='WORLD')
-    help_text(column,'Optional original scenery outside the preserved map core.')
+    outer_button.operator('wz09.map_outskirts', text=('Save + hide outskirts' if root and resident(ctx.scene,root,'outer') else 'Load outskirts as parts'), icon='WORLD')
+    help_text(column,'Separates disconnected outskirts and prop placements once. Save + hide writes your edits before unloading; loading again restores the saved version.')
     save_buttons=column.column(); save_buttons.enabled=bool(root and resident(ctx.scene,root))
     save_buttons.operator('wz09.map_details_save', text='Save detail version', icon='FILE_TICK')
     save_buttons.operator('wz09.city_assets_unload', text='3. Save + unload map', icon='EXPORT')
@@ -552,6 +560,8 @@ def draw(layout, ctx):
     box.operator('wz09.browse_local_assets',text='Browse local assets',icon='ASSET_MANAGER')
     box.operator('wz09.map_helper_visibility', text='Show / hide legacy guides', icon='HIDE_OFF')
     box.prop(ctx.scene, 'wz09_map_advanced', text='Advanced tools')
+    from . import map_alignment
+    map_alignment.draw(layout,ctx)
 
 
 def register():

@@ -1,5 +1,14 @@
 # Update log
 
+## 0.10.6 - October 31, 2026
+
+- Added a persistent-ID map selector, whole-map parent selection, absolute world-height controls, raise/lower steps and explicit pivot-to-water offset alignment. Split parts and loaded outskirts follow the map root.
+- Added a lightweight shared water reference using the existing terrain sea records, adjustable level/extent and a non-selectable flat preview. This is an editor datum, not Ultra-Water simulation or runtime physics. Existing water deletions are preserved.
+- Outskirts now use automatic disconnected-geometry and prop preparation with source-bound cached libraries. Save + hide outskirts saves edits before eviction; reloading retains changes and reuses prepared data.
+- Independent layer fixtures verify edited outskirts save/hide/reload and whole-map movement. Actual Sub Base outskirts preparation was checked separately. No game runtime or source workspace is overwritten.
+
+Validation: 54 focused checks passed. Headless fixtures also checked individual outskirts props, retained vertex edits and deletions, cached reload without re-splitting, water-reference idempotence and stable map selection. The saved working map reopened with the expected water/map heights. Private prepared libraries are not distributed. Previously documented broad-suite translation expectations and missing aircraft fixtures remain unresolved; portable full-project reconstruction is still under verification.
+
 ## 0.10.5 - October 31, 2026
 
 - Fixed map switching after editing original outskirts: core and outskirts now save, reload and evict their own edit records and retained source baselines. A failure saving the previous map no longer leaves users guessing why the selected map stayed in overview mode.

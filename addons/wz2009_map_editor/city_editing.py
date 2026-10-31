@@ -134,7 +134,7 @@ def begin_mesh_edit(ctx):
     # The native World is the large, uninstanced city mesh. Never use the overview.
     source = ctx.active_object
     from . import map_parts,map_residency
-    resident=map_residency.resident(ctx.scene,root)
+    resident=map_residency.resident(ctx.scene,root,map_residency.object_layer(ctx.scene,root,source))
     if resident is not None and map_parts.ready(resident):
         if source.type!='MESH' or source.get('wz09_editor_overlay') or source.modifiers or not source.data.polygons:
             raise ValueError('Select an individual mesh part or prop before editing faces')

@@ -110,21 +110,21 @@ def publish_cache(original,prepared,project):
     temporary.replace(path)
 
 
-def prepare(ctx,root,*,progress=None):
+def prepare(ctx,root,*,layer='core',progress=None):
     from . import map_residency as residency
-    collection=residency.resident(ctx.scene,root)
+    collection=residency.resident(ctx.scene,root,layer)
     if collection is None:raise ValueError('Load map geometry before preparing editable parts')
     before={value.as_pointer() for value in residency.all_ids()}
-    try:return _prepare(ctx,root,progress=progress)
+    try:return _prepare(ctx,root,layer=layer,progress=progress)
     finally:
         for value in residency.all_ids():
             if value.as_pointer() not in before and value.library is None:value[residency.TOKEN]=collection[residency.TOKEN]
 
 
-def _prepare(ctx,root,*,progress=None):
+def _prepare(ctx,root,*,layer='core',progress=None):
     import bpy
     from . import city_editing as city,city_loose_parts as loose,compact_preview,map_residency as residency
-    collection=residency.resident(ctx.scene,root)
+    collection=residency.resident(ctx.scene,root,layer)
     if collection is None:raise ValueError('Load map geometry before preparing editable parts')
     if ready(collection):return json.loads(collection[READY])
     wrapper_repairs=repair_legacy_wrappers(root,list(collection.all_objects))
@@ -185,9 +185,9 @@ def _prepare(ctx,root,*,progress=None):
     return result
 
 
-def ensure_saved(ctx,root,*,cache_source=None):
+def ensure_saved(ctx,root,*,layer='core',cache_source=None):
     from . import map_residency as residency
-    collection=residency.resident(ctx.scene,root)
+    collection=residency.resident(ctx.scene,root,layer)
     if ready(collection):
         for obj in collection.all_objects:
             if obj.get('wz09_compacted_source_parts'):del obj['wz09_compacted_source_parts']
@@ -198,11 +198,11 @@ def ensure_saved(ctx,root,*,cache_source=None):
         manager.progress_update(done*100/max(total,1))
         if workspace:workspace.status_text_set(message+f': {done}/{total}')
     try:
-        prepare(ctx,root,progress=progress)
+        prepare(ctx,root,layer=layer,progress=progress)
         objects=set(collection.all_objects)
         directory=residency.project_root()/'.local/editable_parts/libraries'
-        record=residency.write_library(ctx.scene,root,objects,directory)
-        root[residency.LIBRARY]=json.dumps(record)
+        record=residency.write_library(ctx.scene,root,objects,directory,layer=layer)
+        root[residency.LIBRARY if layer=='core' else residency.OUTER]=json.dumps(record)
         if cache_source is not None:publish_cache(cache_source,record,residency.project_root())
         return root
     finally:
