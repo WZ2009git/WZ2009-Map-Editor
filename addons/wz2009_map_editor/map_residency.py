@@ -47,13 +47,15 @@ def all_ids():
         yield from getattr(bpy.data, name)
 
 
-def _local_registry(scene, identity):
+def _local_registry(scene, identity, objects=None):
     from . import city_editing as city
     records = city.registry(scene)
-    meshes = {k: v for k, v in records['meshes'].items() if v['owner_map'] == identity}
+    source_ids=None if objects is None else {o.get(city.SOURCE) or o.get('wz09_city_part_source') for o in objects}
+    model_ids=None if objects is None else {o.get('wz09_tracked_native_model') for o in objects}
+    meshes = {k: v for k, v in records['meshes'].items() if v['owner_map'] == identity and (source_ids is None or k in source_ids)}
     return dict(meshes=meshes, parts={k: v for k, v in records['parts'].items()
                 if v['source_mesh_id'] in meshes},
-                models={k: v for k, v in records['models'].items() if v['owner_map'] == identity})
+                models={k: v for k, v in records['models'].items() if v['owner_map'] == identity and (model_ids is None or k in model_ids)})
 
 
 def geometry_objects(root):
@@ -82,7 +84,7 @@ def write_library(scene, root, objects, directory, *, layer='core'):
     collection = bpy.data.collections.new('WZ09 library ' + identity + ' ' + layer)
     collection_name = collection.name
     collection[OWNER] = identity; collection[LAYER] = layer
-    records = _local_registry(scene, identity) if layer == 'core' else dict(meshes={}, parts={}, models={})
+    records = _local_registry(scene, identity, objects)
     collection['wz09_library_registry_json'] = json.dumps(records)
     from . import map_parts
     current=resident(scene,root,layer)
@@ -154,7 +156,12 @@ def unload_other_maps(ctx,root):
     roots=[obj for obj in ctx.scene.objects
            if obj.get('wz09_type')=='map_instance' and obj!=root]
     for other in roots:
-        if resident(ctx.scene,other):unload(ctx,other)
+        if resident(ctx.scene,other):
+            try:unload(ctx,other)
+            except (ValueError,RuntimeError,OSError) as exc:
+                target=root.get('wz09_display_name',root.get('wz09_source_map','selected map'))
+                previous=other.get('wz09_display_name',other.get('wz09_source_map','previous map'))
+                raise ValueError(f'{target} was not loaded: saving {previous} failed. Existing details retained. {exc}') from exc
 
 
 def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=True):
@@ -221,6 +228,7 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=Tr
             if obj.get('wz09_native_instance_prototype'): obj.hide_set(True)
         if layer == 'core':
             collection[overview_preview.SOURCE] = str(root['wz09_id'])
+        if layer in ('core','outer'):
             records = city.registry(ctx.scene)
             incoming = json.loads(collection['wz09_library_registry_json'])
             if root.get('wz09_original_map_instance_id') and not incoming['meshes']:
@@ -236,6 +244,7 @@ def load(ctx, root=None, *, layer='core', _validate_copy=None, _prepare_parts=Tr
                 if set(incoming[kind]) & set(records[kind]): raise ValueError('Duplicate edit IDs while loading')
                 records[kind].update(incoming[kind])
             city._write(ctx.scene, records)
+        if layer == 'core':
             states = json.loads(ctx.scene.get('wz09_city_view_states_json', '{}'))
             states[str(root['wz09_id'])] = 'loaded'
             ctx.scene['wz09_city_view_states_json'] = json.dumps(states)
@@ -284,10 +293,9 @@ def save(ctx, root=None, *, layer='core'):
     token = collection[TOKEN]
     for obj in objects:
         if obj.type == 'MESH' and not obj.data.get(TOKEN): obj.data[TOKEN] = token
-    if layer == 'core':
-        mesh_ids = _local_registry(ctx.scene, str(root['wz09_id']))['meshes']
-        for source_id in mesh_ids:
-            for mesh in city.retained_baselines(ctx.scene,source_id):mesh[TOKEN]=token
+    mesh_ids = _local_registry(ctx.scene, str(root['wz09_id']),objects)['meshes']
+    for source_id in mesh_ids:
+        for mesh in city.retained_baselines(ctx.scene,source_id):mesh[TOKEN]=token
     record = write_library(ctx.scene, root, objects, Path(previous['path']).parent, layer=layer)
     # The export includes master root plus prior assembly. Only the outermost
     # root carries the library root ID after this write.
@@ -302,6 +310,7 @@ def _evict(ctx, root, layer):
     if collection is None: return
     token = collection[TOKEN]
     objects = set(collection.all_objects)
+    outgoing = _local_registry(ctx.scene, str(root['wz09_id']),objects)
     for child in collection.children_recursive: child[TOKEN] = token
     # Geometry created after append (split/extract/restore) belongs to this
     # collection too. Snapshot it before this operation.
@@ -322,12 +331,11 @@ def _evict(ctx, root, layer):
             if value.users == 0: removable.append(value)
         if not removable: break
         bpy.data.batch_remove(ids=removable)
+    records = city.registry(ctx.scene)
+    for kind in records:
+        for identity in outgoing[kind]: records[kind].pop(identity, None)
+    city._write(ctx.scene, records)
     if layer == 'core':
-        outgoing = _local_registry(ctx.scene, str(root['wz09_id']))
-        records = city.registry(ctx.scene)
-        for kind in records:
-            for identity in outgoing[kind]: records[kind].pop(identity, None)
-        city._write(ctx.scene, records)
         states = json.loads(ctx.scene.get('wz09_city_view_states_json', '{}'))
         states[str(root['wz09_id'])] = 'unloaded'
         ctx.scene['wz09_city_view_states_json'] = json.dumps(states)
@@ -475,6 +483,11 @@ def initialize_workshop_view(ctx):
                 area.spaces.active.overlay.show_extras=False
                 area.spaces.active.overlay.show_relationship_lines=False
                 area.spaces.active.overlay.show_text=False
+                # Repair saved default clipping even when framing was already
+                # initialized. Preserve the user's viewpoint and wider ranges.
+                space=area.spaces.active
+                space.clip_end=max(getattr(space,'clip_end',0),20000,
+                    getattr(getattr(space,'region_3d',None),'view_distance',0)*4)
     if not ctx.scene.get('wz09_library_workspace') or ctx.scene.get('wz09_workshop_view_initialized'): return
     if window is None:return
     from mathutils import Vector, Euler

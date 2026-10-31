@@ -34,7 +34,9 @@ def retained_baselines(scene,identity):
     if entry:
         from . import map_residency
         tokens={c.get(map_residency.TOKEN) for c in getattr(getattr(scene,'collection',None),'children_recursive',())
-                if c.get(map_residency.OWNER)==entry['owner_map'] and c.get(map_residency.LAYER)=='core' and c.get(map_residency.TOKEN)}
+                if c.get(map_residency.OWNER)==entry['owner_map'] and c.get(map_residency.TOKEN)
+                and (getattr(c,'all_objects',None) is None or any(
+                    o.get(SOURCE)==identity or o.get('wz09_city_part_source')==identity for o in c.all_objects))}
         scoped=[m for m in meshes if m.get(map_residency.TOKEN) in tokens]
         if tokens:return scoped
     return meshes

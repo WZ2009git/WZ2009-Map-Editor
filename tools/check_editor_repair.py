@@ -24,6 +24,7 @@ class RepairTests(unittest.TestCase):
         ctx=types.SimpleNamespace(scene=scene,window=None,window_manager=types.SimpleNamespace(windows=[types.SimpleNamespace(screen=types.SimpleNamespace(areas=[area]))]))
         with patch.object(residency,'prepare_workshop_labels'):residency.initialize_workshop_view(ctx)
         self.assertFalse(overlay.show_text);self.assertFalse(overlay.show_extras)
+        self.assertEqual(area.spaces.active.clip_end,20000)
     def test_saved_initialized_view_still_hides_legacy_object_names(self):
         overlay=types.SimpleNamespace(show_extras=True,show_relationship_lines=True,show_text=True)
         area=types.SimpleNamespace(type='VIEW_3D',spaces=types.SimpleNamespace(active=types.SimpleNamespace(overlay=overlay)))
@@ -32,6 +33,11 @@ class RepairTests(unittest.TestCase):
         with patch.object(residency,'prepare_workshop_labels'):
             residency.initialize_workshop_view(ctx)
         self.assertFalse(overlay.show_extras);self.assertFalse(overlay.show_relationship_lines);self.assertFalse(overlay.show_text)
+        self.assertEqual(area.spaces.active.clip_end,20000)
+        area.spaces.active.clip_end=50000
+        with patch.object(residency,'prepare_workshop_labels'):
+            residency.initialize_workshop_view(ctx)
+        self.assertEqual(area.spaces.active.clip_end,50000)
     def test_labels_follow_ids_even_when_object_names_are_misleading(self):
         favela=root('Rust','favela-id');rust=root('Favela','rust-id')
         a=proxy('unrelated A','rust-id',100);b=proxy('unrelated B','favela-id',200)

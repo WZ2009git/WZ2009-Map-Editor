@@ -1,5 +1,15 @@
 # Update log
 
+## 0.10.5 - October 31, 2026
+
+- Fixed map switching after editing original outskirts: core and outskirts now save, reload and evict their own edit records and retained source baselines. A failure saving the previous map no longer leaves users guessing why the selected map stayed in overview mode.
+- Source baselines are resolved from the layer containing their persistent source/part IDs. Another layer or cached scene cannot supply the baseline accidentally.
+- Saved workshop views receive a corrected viewport clipping range, preventing map geometry from disappearing at the former 1,000-unit drawing limit. Existing wider ranges and the user's viewpoint are preserved.
+
+Original source workspaces remain unchanged. Saves create versioned detail libraries; portable reconstruction remains under verification.
+
+Validation: 54 focused checks passed. Live normal switching loaded Skidrow (8,348 visible non-overlay meshes) and Rundown (13,119), with single-prop Edit Mode and unchanged shared copies verified in each. The full 1,195-test suite still reports legacy German-message expectation failures and missing native-aircraft provenance fixtures; these unrelated checks are not claimed as passing.
+
 ## 0.10.4 - October 31, 2026
 
 ### Consistent editable map parts

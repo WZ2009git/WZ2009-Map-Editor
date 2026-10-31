@@ -85,4 +85,30 @@ class CopyTests(unittest.TestCase):
         with patch.dict(sys.modules,{'bpy':types.SimpleNamespace(data=types.SimpleNamespace(meshes=[baseline]))}):
             self.assertEqual(city.retained_baselines({},'source'),[baseline])
 
+    def test_core_and_outskirts_registry_are_saved_separately(self):
+        records=dict(meshes={'core':dict(owner_map='map'),'outer':dict(owner_map='map')},
+                     parts={'a':dict(source_mesh_id='core'),'b':dict(source_mesh_id='outer')},
+                     models={'car':dict(owner_map='map'),'tree':dict(owner_map='map')})
+        scene={city.REGISTRY:json.dumps(records)}
+        core=[{city.SOURCE:'core'},{'wz09_tracked_native_model':'car'}]
+        outer=[{'wz09_city_part_source':'outer'},{'wz09_tracked_native_model':'tree'}]
+        a=residency._local_registry(scene,'map',core);b=residency._local_registry(scene,'map',outer)
+        self.assertEqual(set(a['meshes']),{'core'});self.assertEqual(set(b['meshes']),{'outer'})
+        self.assertEqual(set(a['parts']),{'a'});self.assertEqual(set(b['parts']),{'b'})
+        self.assertEqual(set(a['models']),{'car'});self.assertEqual(set(b['models']),{'tree'})
+
+    def test_outskirts_baseline_uses_its_own_residency_token(self):
+        class Collection(dict):pass
+        class Scene(dict):pass
+        core=Collection(wz09_resident_map_id='map',wz09_resident_layer='core',wz09_residency_token='core-token')
+        outer=Collection(wz09_resident_map_id='map',wz09_resident_layer='outer',wz09_residency_token='outer-token')
+        core.all_objects=[{city.SOURCE:'core-source'}];outer.all_objects=[{city.SOURCE:'outer-source'}]
+        scene=Scene({city.REGISTRY:json.dumps(dict(meshes={'outer-source':dict(owner_map='map')},parts={},models={}))})
+        scene.collection=types.SimpleNamespace(children_recursive=[core,outer])
+        expected={'wz09_city_baseline_id':'outer-source','wz09_residency_token':'outer-token'}
+        foreign={'wz09_city_baseline_id':'outer-source','wz09_residency_token':'foreign'}
+        with patch.dict(sys.modules,{'bpy':types.SimpleNamespace(data=types.SimpleNamespace(meshes=[foreign,expected]))}):
+            result=city.retained_baselines(scene,'outer-source')
+        self.assertEqual(len(result),1);self.assertIs(result[0],expected)
+
 if __name__=='__main__':unittest.main(verbosity=2)

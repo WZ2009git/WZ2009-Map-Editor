@@ -18,6 +18,14 @@ def capture(domain='POINT',kind='BYTE_COLOR',name='Color'):
                 attributes=[(name,domain,kind,'color',values)])
 
 class PreviewAttributeTests(unittest.TestCase):
+    def test_failed_previous_save_identifies_target_and_retains_error(self):
+        current={'wz09_type':'map_instance','wz09_display_name':'Terminal'}
+        target={'wz09_type':'map_instance','wz09_display_name':'Skidrow'}
+        ctx=SimpleNamespace(scene=SimpleNamespace(objects=[current,target]))
+        with patch.object(residency,'resident',return_value=True),patch.object(residency,'unload',side_effect=ValueError('baseline unavailable')):
+            with self.assertRaisesRegex(ValueError,'Skidrow was not loaded: saving Terminal failed.*baseline unavailable'):
+                residency.unload_other_maps(ctx,target)
+
     def test_switching_maps_never_reads_evicted_detail_handles(self):
         class Object(dict):
             dead=False
